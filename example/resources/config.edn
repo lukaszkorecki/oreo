@@ -1,0 +1,14 @@
+{
+ :profile #or [#env PROFILE "foo"]
+ :api { :server { :port 1002 }}
+
+ :oreo/system {
+                    :web-server #:oreo {:create :foobar.server/create
+                                             :config #ref [:api :server]
+                                             :dependencies [:widget :now]}
+
+                    :now #:oreo {:create #oreo/fnc :foobar.system/now}
+                    :widget #:oreo {:create :foobar.widget/make
+                                         :config #ref [:profile]}
+                    }
+ }

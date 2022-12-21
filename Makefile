@@ -1,0 +1,2 @@
+fmt:
+	clojure-lsp format
