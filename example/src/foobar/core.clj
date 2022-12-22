@@ -1,8 +1,7 @@
 (ns foobar.core
   (:require
-    [com.stuartsierra.component :as component]
-    [foobar.system :as system]))
-
+   [com.stuartsierra.component :as component]
+   [foobar.system :as system]))
 
 (defn -main
   [& _args]

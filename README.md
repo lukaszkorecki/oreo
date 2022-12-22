@@ -25,29 +25,29 @@ TBC
  ;; your system definition, it can be here or in a different file
  ;; merged by using #include reader macro
  :oreo/system {
-                    ;; we're using namespace keys shorthand syntax for maps
-                    :web-server #:oreo{;; where to find the function that creates the component
-                                            :create :foobar.server/create
-                                            ;; what is the configuration that :oreo/create function
-                                            ;; expects
-                                            :config #ref [:api :server]
+               ;; we're using namespace keys shorthand syntax for maps
+               :web-server #:oreo{;; where to find the function that creates the component
+                                  :create :foobar.server/create
+                                  ;; what is the configuration that :oreo/create function
+                                  ;; expects
+                                  :config #ref [:api :server]
 
-                                            ;; component dependency list, optional
-                                            :dependencies [:widget :uuid]}
-                    ;; functions can be components too!
-                    :uuid #:oreo {:create #oreo/fnc :clojure.core/random-uuid}
+                                  ;; component dependency list, optional
+                                  :dependencies [:widget :uuid]}
+               ;; functions can be components too!
+               :uuid #:oreo {:create #oreo/fnc :clojure.core/random-uuid}
 
-                    ;; function components can have dependencies
-                    :printer #:oreo {:create #oreo/fnc-w-deps :clojure.core/str
-                                          :dependencies [:uuid]}
+               ;; function components can have dependencies
+               :printer #:oreo {:create #oreo/fnc-w-deps :clojure.core/str
+                                :dependencies [:uuid]}
 
-                    ;; good old record-based component
-                    :widget #:oreo {:create :foobar.widget/make
-                                         :config #ref [:profile]
-                                         }
+               ;; good old record-based component
+               :widget #:oreo {:create :foobar.widget/make
+                               :config #ref [:profile]
+                               }
 
 
-                    }
+               }
  }
 
 ```
@@ -181,22 +181,22 @@ Becomes (after some changes) something like this:
       }
 
  :oreo/system {
-                    :db #:oreo {:config #ref [:pg]
-                                     :create :app.system/pg-component}
-                    :redis #:oreo {:config #ref [:redis]
-                                        ;; no wrappers needed!
-                                        :create :app.component.redis/create}
+               :db #:oreo {:config #ref [:pg]
+                           :create :app.system/pg-component}
+               :redis #:oreo {:config #ref [:redis]
+                              ;; no wrappers needed!
+                              :create :app.component.redis/create}
                     ;;; see below for notes, this is specific to components that accept functions
-                    ;; as part of their configuration, some components will be have to be rewritten
-                    :web/handler #:oreo {:create :app.http/handler-component  }
-                    :web/server #:oreo {:create :app.component.web-server/create
-                                             ;; note this is standard Component syntax
-                                             ;; for aliasing dependencies from the system map
-                                             :dependencies {:db :db
-                                                            :redis :redis
-                                                            :handler :web/handler}}
+               ;; as part of their configuration, some components will be have to be rewritten
+               :web/handler #:oreo {:create :app.http/handler-component  }
+               :web/server #:oreo {:create :app.component.web-server/create
+                                   ;; note this is standard Component syntax
+                                   ;; for aliasing dependencies from the system map
+                                   :dependencies {:db :db
+                                                  :redis :redis
+                                                  :handler :web/handler}}
 
-                    }
+               }
 
  }
 ```
@@ -209,8 +209,6 @@ The second adjustment you have to make is to make function arguments to your com
 I get it, Oreo is not a silver bullet, but nothing is stopping you from doing something like this:
 
 ```clojure
-
-
 (ns app.system )
 
 (defn create []

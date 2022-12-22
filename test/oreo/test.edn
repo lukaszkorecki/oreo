@@ -1,13 +1,13 @@
 {:one-config {:port 5000}
  :two-config {:bind "0.0.0.0"}
  :oreo/system {:one #:oreo{:create :oreo.core-test/->ComponentOne
-                                     :config #ref [:one-config]}
+                           :config #ref [:one-config]}
 
-                    :two #:oreo{:create :oreo.core-test/make-two
-                                     :config #ref [:two-config]
-                                     :dependencies [:one :three]}
+               :two #:oreo{:create :oreo.core-test/make-two
+                           :config #ref [:two-config]
+                           :dependencies [:one :three]}
 
-                    :three #:oreo{:create #oreo/fnc :oreo.core-test/component-three}
+               :three #:oreo{:create #oreo/fnc :oreo.core-test/component-three}
 
-                    :four #:oreo {:create #oreo/fnc-w-deps :oreo.core-test/component-four
-                                       :dependencies [:two]}}}
+               :four #:oreo {:create #oreo/fnc-w-deps :oreo.core-test/component-four
+                             :dependencies [:two]}}}

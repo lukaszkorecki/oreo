@@ -1,12 +1,11 @@
 (ns foobar.server
   (:require
-    [clojure.tools.logging :as log]
-    [com.stuartsierra.component :as component]
-    [foobar.widget :as widget])
+   [clojure.tools.logging :as log]
+   [com.stuartsierra.component :as component]
+   [foobar.widget :as widget])
   (:import
-    (java.util.concurrent.atomic
-      AtomicBoolean)))
-
+   (java.util.concurrent.atomic
+    AtomicBoolean)))
 
 (defrecord FakeServer
   [;; config
@@ -32,13 +31,11 @@
                      (Thread/sleep 5000)))]
       (assoc this :logger logger :check check)))
 
-
   (stop
     [this]
     (.set check false)
     (future-cancel logger)
     (assoc this :check nil :logger nil)))
-
 
 (defn create
   [{:keys [port]}]
