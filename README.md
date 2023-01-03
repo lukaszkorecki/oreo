@@ -67,8 +67,8 @@ In your config map (the one you load using `aero.core/read-config`) add `:oreo/s
 
 Sometimes it's required to pass functions as dependencies to other components. You can use two reader macros to resolve your functions:
 
-- `#oreo/fnc` - a FuNctional Component, no dependencies on its own, accepts 1 argument
-- `#oreo/fnc-w-deps` - functional component with dependencies on of its own, will receive its dependencies map as first argument, accepts 2nd argument
+- `#oreo/fnc` - a FuNctional Component, no dependencies on its own, accepts 1 argument and passes it down to your original function
+- `#oreo/fnc-w-deps` - functional component with dependencies on of its own, will receive its dependencies map as first argument, 2nd argument will be passed to the function 
 
 You can extend `aero.core/reader` multimethod to return other things that can be used as components and/or component dependencies.
 
@@ -97,7 +97,7 @@ Obviously using Oreo clashes with reloading your code, renaming things etc since
 
 ### I don't want to use records
 
-That's not really my problem, but here's what you can do:
+That's not really my or Oreo's problem, but here's what you can do:
 
 - use records
 - your `:create` function can return something that implements the `Lifecycle` protocol using `extend-via-metadata` approach
@@ -200,6 +200,7 @@ Becomes (after some changes) something like this:
 
  }
 ```
+
 Some components "constructors" can be referenced without any changes, some will require small wrapper functions. YMMV.
 
 The second adjustment you have to make is to make function arguments to your components into proper components themselves, which in my opinion is a good practice anyway. Here's an example: https://github.com/nomnom-insights/utility-belt.http/blob/e35c1ba69281384dfa52d6de2031acd6e947e948/src/utility_belt/http/component/server.clj
@@ -223,7 +224,7 @@ I get it, Oreo is not a silver bullet, but nothing is stopping you from doing so
     (component/map->SystemMap (merge sys-map-base legacy-system-map))))
 ```
 
-Remember, "It's just data a functions"
+Remember, "It's just data and functions"
 
 # Status/roadmap
 
