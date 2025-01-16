@@ -7,7 +7,8 @@
 
 Combines [Component](https://github.com/stuartsierra/component) and [Aero](https://github.com/juxt/aero) so that you can declaratively define your System, along with configuration of your Components in a single config.
 
-> **Note** I'm using Title-Case for Component the library, and lower-case component to mean the **actual** components in your system
+> [!NOTE]
+> I'm using Title-Case for Component the library, and lower-case component to mean the **actual** components in your system
 
 # Installation
 
