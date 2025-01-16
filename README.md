@@ -1,6 +1,7 @@
 # Oreo
 
-> **Warning** this is pre-alpha quality software, expect breakage!
+> [!WARNING]
+> this is not even pre-alpha quality software, expect breakage!
 
 # What is this?
 
@@ -226,10 +227,14 @@ I get it, Oreo is not a silver bullet, but nothing is stopping you from doing so
 
 Remember, "It's just data and functions"
 
-# Status/roadmap
+# Status/roadmap/TODO
 
 
 - [x] make it work in a synthetic example
 - [ ] finalize naming/API
+- [ ] simplify function components
+- [ ] see if any of `utility-belt.component` utils can be merged in and used
+- [ ] somehow solve reloading issue - hook into `tools.namespace`?
+- [ ] use qualified symbols for factory functions, binding handler functions etc by using `requiring-resolve, remove necessity for qualified keywords
 - [ ] use in something real
 - [ ] Clojars release
