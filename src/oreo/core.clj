@@ -12,7 +12,6 @@
   [_opts _tag value]
   @(requiring-resolve (symbol value)))
 
-
 ;; Similar to above, but returns a var
 (defmethod aero/reader 'oc/ref
   [_opts _tag value]
@@ -25,14 +24,15 @@
   - optionally configure the component to wire dependencies into it, just like Component does"
   [system-config]
   (walk/postwalk (fn [thing]
-                                      (if (and (map? thing)
+                   (if (and (map? thing)
                             (:oc/create thing))
                      (let [{:oc/keys [init create using]} thing
                            component-create-fn' (if (or (symbol? create) (keyword? create))
                                                   (requiring-resolve (symbol create))
                                                   (throw (ex-info "invalid component create function" thing)))]
-                       ;; FIXME: handle component init functions which do not accept config!
-                       (cond-> (component-create-fn' init)
+                       (cond-> (if init
+                                 (component-create-fn' init)
+                                 (component-create-fn'))
                          (seq using) (component/using using)))
                      thing))
                  system-config))
@@ -47,8 +47,10 @@
 (defn create-system
   "Given a config map processed by aero.core/read-config
   creates a Component system map, the system config is expected to be
-  stored under :oreo/system key"
-  [config]
-  (-> config
-      :oc/system
-      make-system-map))
+  stored under `:oc/system` key by default"
+  ([config]
+   (create-system config :oc/system))
+  ([config system-def-key]
+   (-> config
+       system-def-key
+       make-system-map)))
