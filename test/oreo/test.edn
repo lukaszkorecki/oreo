@@ -10,8 +10,8 @@
                                 :config {:config {:port 8080}
                                          ;; we're using fn! because jetty component does a strict check on arguments and requires :handler to pass `fn?`
                                          ;; as precondition
-                                         :handler #oc/fn! oreo.core-test/handler}
+                                         :handler #oc/ref! oreo.core-test/handler}
 
                                 :using [:settings]}
              ;; functions can be used as components, and we can use keywords rather than symbols
-             :http-client #oc/fn :oreo.core-test/http-client}}
+             :http-client #oc/ref :oreo.core-test/http-client}}

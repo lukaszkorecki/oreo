@@ -28,7 +28,6 @@
                                                component/start)]
 
       (testing "structure is there"
-
         (is (match? {:settings {:greeting "hello world"}
                      :http-client #'oreo.core-test/http-client
                      :http-server {:config {:port 8080
@@ -39,5 +38,4 @@
       (testing "all features tested: dependency injection, function components etc"
         (is (= "Greeting: hello world"
                (http-client "http://localhost:8080/"))))
-
       (component/stop system))))

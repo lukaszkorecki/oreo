@@ -16,83 +16,82 @@ TBC
 
 # Annotated example
 
-
 ```clojure
-{
- ;; your shared configuration
+;; some assumptions:
+
+; foobar.server/create expects a map of {:port :bind}
+; foobar.widget/make expects a profile map
+
+;; this would be your `config.edn` file somewhere in the classpath (resources or src)
+{;; your shared configuration
  :profile #or [#env PROFILE "development"]
- :api { :server {:port #long #or [#env PORT 1002]
-                 :bind "0.0.0.0"}}
+ :api {:server {:port #long #or [#env PORT 1002]
+                :bind "0.0.0.0"}}
 
  ;; your system definition, it can be here or in a different file
- ;; merged by using #include reader macro
- :oreo/system {
-               ;; we're using namespace keys shorthand syntax for maps
-               :web-server #:oreo{;; where to find the function that creates the component
-                                  :create :foobar.server/create
-                                  ;; what is the configuration that :oreo/create function
-                                  ;; expects
-                                  :config #ref [:api :server]
+ ;; merged by using #include reader macro, use #profile etc etc
+ :oc/system {;; we're using namespace keys shorthand syntax for maps
+             :web-server #:oc{;; where to find the function that creates the component
+                              :init :foobar.server/create
+                              ;; what is the configuration that :oc/init function
+                              ;; expects
+                              :config #ref [:api :server]
 
-                                  ;; component dependency list, optional
-                                  :dependencies [:widget :uuid]}
-               ;; functions can be components too!
-               :uuid #:oreo {:create #oreo/fnc :clojure.core/random-uuid}
+                              ;; component dependency list, optional
+                              :using [:widget :uuid]}
+             ;; functions can be components too!
+             :uuid #:oc  #oc/ref :clojure.core/random-uuid
 
-               ;; function components can have dependencies
-               :printer #:oreo {:create #oreo/fnc-w-deps :clojure.core/str
-                                :dependencies [:uuid]}
-
-               ;; good old record-based component
-               :widget #:oreo {:create :foobar.widget/make
-                               :config #ref [:profile]
-                               }
+             ;; good old record-based component
+             :widget #:oc {:init :foobar.widget/make
+                           :config #ref [:profile]}}}
 
 
-               }
- }
+;; in your app/system.clj:
 
+(ns app.system
+  (:require
+   [aero.core :as aero]
+   [oreo.core :as oreo]
+   [com.stuartsierra.component :as component]))
+
+;; load configuration as usual
+(def config
+  (aero/read-config (io/resource "config.edn")))
+
+;; fn to start the system
+(defn start []
+  (-> config
+      ;; use ^^^ to expand into system map
+      oreo/create-system
+      ;; and start it
+      component/start))
 ```
 
-# How to use it?
+# How does this work?
 
-It's **very simple**, here's what you need to do:
+It's **very simple** ;-) Oreo plugs into Areo's facilities and defines a couple of extra reader tags to simplify looking up vars which are used as component init functions, references to handlers etc.
 
-In your config map (the one you load using `aero.core/read-config`) add `:oreo/system` key with a map that defines your system. Name your component keys as you would normally, and define them as maps with special keys. They are:
+In your config map (the one you load using `aero.core/read-config`) add `:oc/system` key with a map that defines your system. Name your component keys as you would normally, and define them as maps with special keys. They are:
 
-
-- `:oreo/config` - a configuration map for your component, either defined inline or using `#ref` reader macro or any other facility provided by Aero (`#env`, `#or` etc) used to produce a configuration map
-- `:oreo/create`  - a fully qualified, namespaced keyword referencing a function that creates your component, it will receive a single argument - the config map read from `:oreo/config`. See below for more information
-- `:oreo/dependencies` - **optional** dependency list for the component, can be a vector or a map - just like Component expects it to. If missing, component will be constructed without them.
-
-## Function components
-
-Sometimes it's required to pass functions as dependencies to other components. You can use two reader macros to resolve your functions:
-
-- `#oreo/fnc` - a FuNctional Component, no dependencies on its own, accepts 1 argument and passes it down to your original function
-- `#oreo/fnc-w-deps` - functional component with dependencies on of its own, will receive its dependencies map as first argument, 2nd argument will be passed to the function 
-
-You can extend `aero.core/reader` multimethod to return other things that can be used as components and/or component dependencies.
-
-Once you define your system map, you can load your config, process it with Oreo and pass it to Component
-and start it as you would normally:
+- `:oc/init`  - a fully qualified, namespaced keyword or symbol referencing a function that creates your component, it will receive a single argument - the config map read from `:oc/config`.
+- `:oc/config` - a configuration map for your component, either defined inline or using `#ref` reader macro or any other facility provided by Aero (`#env`, `#or` etc) used to produce a configuration map
+- `:oc/using` - **optional** dependency list for the component, can be a vector or a map - just like Component expects it to. If missing, component will be constructed without any dependencies
 
 
-```clojure
-(-> "config.edn"
-    aero/read-conifg
-    oreo.core/create-system
-    component/start)
-```
+Note that this is only required for Components which have a lifecycle and/or require dependency injection. If you want to add plain functions or even maps to your system, you can use two reader tags:
+
+- `#oc/ref` - under the hood uses `requiring-resolve` to obtain a var (usually a function) specified as fully qualified namespaced keyword or a symbol
+- `#oc/ref!` - under the hood uses `requiring-resolve` to obtain a var, but also derefs it to get actual var value (in cases where you need direct access to to it)
+
+## Examples
+
+Check `example` directory for more information as well as unit tests.
+
 
 # Caveats, gotchas and Q&A
 
-### Your component has no config or lifecycle
-
-Odd, I'd say you're *holding it wrong*, but if you really have this requirement make your `:create` function ignore any args it recevies. Alternatively you can use `oreo/fnc` to make a function into a component.
-
-
-### Renaming your component's namespace or `create` function
+### Code reloading, renaming etc
 
 Obviously using Oreo clashes with reloading your code, renaming things etc since everything is declarative. "Normal" usage of Component is not susceptible to this because your system is defined as part of your codebase. Just be careful about reloading things.
 
@@ -102,8 +101,7 @@ Obviously using Oreo clashes with reloading your code, renaming things etc since
 That's not really my or Oreo's problem, but here's what you can do:
 
 - use records
-- your `:create` function can return something that implements the `Lifecycle` protocol using `extend-via-metadata` approach
-- use `#oreo/fnc` to get a function-as-a-component
+- your `:init` function can return something that implements the `Lifecycle` protocol using `extend-via-metadata` approach
 
 
 ### I don't want to define my config and system map in the same file
@@ -113,120 +111,11 @@ Use `#include` - see here for more information: https://github.com/juxt/aero#inc
 
 ### So it's like [Integrant](https://github.com/weavejester/integrant)?
 
-Maybe, I never used it but it looks vaguely similar. Personally, I find Integrant far more complicated: derived keywords, ability to suspend components and it seems to be reimplementing a lot of what Aero already does. Again, I don't have much experience with it, but I worked on many Clojure projects that used Component and I tend to think that it solved the problem of structuring applications and dependency injection well enough that we don't really need anything else. But that's just me, you do you.
+Maybe, I never used it but it looks vaguely similar. The reason why Oreo exists is because:
 
-Secondly, Oreo is meant to help existing Component users: migration boils down to rewriting how your system map is built into the expected Oreo map. See the next section.
-
-### Migrating to Oreo
-
-This assumes you're already using Aero and Component. Or Component at least.
-
-
-Given this `config.edn`:
-
-```clojure
-{
- :api-server {:port 8000}
- :redis {:host "0.0.0.0"
-         :port 6379}
- :pg {:host "0.0.0.0"
-      :username "foo"
-      :password "password"
-      :dbname "bananas"
-      :dbtype "Postgres"
-      }
-}
-```
-and this `app.system` code:
-
-
-```clojure
-(ns app.system
-  (:require [com.stuartsierra.component :as component]
-            [aero.core :as aero]
-            [clojure.java.io :as io]
-            [next.jdbc.connection :as connection]
-            [app.component.web-server :as web-server]
-            [app.component.redis :as redis])
-  (:import (com.zaxxer.hikari HikariDataSource)))
-
-
-(defn pg-component [config]
-  (connection/component HikariDataSource config))
-
-(defn create []
-  (let [config (aero/read-config (io/resource "config.edn"))
-        sys {
-             :db (db-component (:pg config))
-             :redis (redis/create (:redis config))
-             :web-server (component/using
-                          (web-server/create (merge {:handler app.http/handler}
-                                                    (:api-server config)))
-                          [:db :redis])}]
-    (component/map->SystemMap sys)))
-```
-
-
-Becomes (after some changes) something like this:
-
-
-```clojure
-{
- :api-server {:port 8000}
- :redis {:host "0.0.0.0"
-         :port 6379}
- :pg {:host "0.0.0.0"
-      :user "foo"
-      :password "password"
-      :dbname "bananas"
-      :dbtype "Postgres"
-      }
-
- :oreo/system {
-               :db #:oreo {:config #ref [:pg]
-                           :create :app.system/pg-component}
-               :redis #:oreo {:config #ref [:redis]
-                              ;; no wrappers needed!
-                              :create :app.component.redis/create}
-                    ;;; see below for notes, this is specific to components that accept functions
-               ;; as part of their configuration, some components will be have to be rewritten
-               :web/handler #:oreo {:create :app.http/handler-component  }
-               :web/server #:oreo {:create :app.component.web-server/create
-                                   ;; note this is standard Component syntax
-                                   ;; for aliasing dependencies from the system map
-                                   :dependencies {:db :db
-                                                  :redis :redis
-                                                  :handler :web/handler}}
-
-               }
-
- }
-```
-
-Some components "constructors" can be referenced without any changes, some will require small wrapper functions. YMMV.
-
-The second adjustment you have to make is to make function arguments to your components into proper components themselves, which in my opinion is a good practice anyway. Here's an example: https://github.com/nomnom-insights/utility-belt.http/blob/e35c1ba69281384dfa52d6de2031acd6e947e948/src/utility_belt/http/component/server.clj
-
-### Some of my components are pretty complicated and can't be initiallized with config-as-data only
-
-I get it, Oreo is not a silver bullet, but nothing is stopping you from doing something like this:
-
-```clojure
-(ns app.system )
-
-(defn create []
-  (let [conifg (aero/read-config (io/resource "config.edn"))
-        sys-map-base (oreo/resolve-system-from-config (:oreo/system config))
-        legacy-system-map {:my-gnarly-component (component/using
-                                                 (app.gnarly/create {:handler async.processor/handler
-                                                                     :post-processor (fn [job]
-                                                                                       (update job :name str/reverse))
-                                                                     :config (get-in config [:rabbitmq :consumer :gnarly])})
-                                                 [:db :redis :rmq])}]
-    (component/map->SystemMap (merge sys-map-base legacy-system-map))))
-```
-
-Remember, "It's just data and functions"
+- Component already solved this problem, and because of it's reliance on protocols and records, it can be integrated (heh) with Java ecosystem in a more flexible way than Integrant
+- Oreo doesn't reinvent what Areo does already - Integrant has its own notion of `ref` etc
+- most importantly: Oreo is meant to help existing Component users, rather than require rewriting code
 
 # Status/roadmap/TODO
 
