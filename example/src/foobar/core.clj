@@ -1,9 +1,15 @@
 (ns foobar.core
   (:require
+   [mokujin.log :as log]
    [com.stuartsierra.component :as component]
+   [utility-belt.lifecycle :as lifecycle]
    [foobar.system :as system]))
 
 (defn -main
   [& _args]
   (component/start (system/create))
-  #_(component/stop sys))
+  (lifecycle/add-shutdown-hook :system-shutdown
+                               #(component/stop (system/create)))
+
+  (log/infof "Run `curl http://localhost:%s` to test that the system is working"
+             (-> system/config :api :server :port)))

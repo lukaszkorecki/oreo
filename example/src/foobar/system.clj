@@ -2,15 +2,22 @@
   (:require
    [aero.core :as aero]
    [oreo.core :as oreo]
+   [mokujin.log :as log]
+   [mokujin.logback :as lb]
    [clojure.java.io :as io]))
 
-(defn now
-  []
-  (str (java.time.LocalDateTime/now)))
+(lb/configure! {:config ::lb/text
+                :logger-filters {"org.eclipse" "WARN"}})
+
+(def store
+  (atom {:counter 0}))
+
+(defn tracer []
+  (log/info "api call detected"))
+
+(def config
+  (aero/read-config (io/resource "config.edn")))
 
 (defn create
   []
-  (-> "config.edn"
-      io/resource
-      aero/read-config
-      oreo/create-system))
+  (oreo/create-system config))
