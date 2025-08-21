@@ -5,7 +5,7 @@
                                :config #ref [:api :server]
                                :dependencies [:widget :now]}
 
-             :now #:oc {:create #oreo/fn :foobar.system/now}
+             :now #oc/ref :foobar.system/now
 
              :widget #:oc {:init :foobar.widget/make
                            :config #ref [:profile]}}}

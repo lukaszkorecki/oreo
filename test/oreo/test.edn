@@ -6,8 +6,8 @@
              ;; Uses a init function from a library, and how to pass init configuration
              ;; + use refrences to functions
              ;; + dependency injection
-             :http-server #:oc {:init :utility-belt.component.jetty/create
-                                :config {:config {:port 8080}
+             :http-server #:oc {:create :utility-belt.component.jetty/create
+                                :init {:config {:port 8080}
                                          ;; we're using fn! because jetty component does a strict check on arguments and requires :handler to pass `fn?`
                                          ;; as precondition
                                          :handler #oc/ref! oreo.core-test/handler}

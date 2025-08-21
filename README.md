@@ -32,10 +32,10 @@ TBC
  ;; merged by using #include reader macro, use #profile etc etc
  :oc/system {;; we're using namespace keys shorthand syntax for maps
              :web-server #:oc{;; where to find the function that creates the component
-                              :init :foobar.server/create
-                              ;; what is the configuration that :oc/init function
+                              :create :foobar.server/create
+                              ;; what is the configuration that :oc/create function
                               ;; expects
-                              :config #ref [:api :server]
+                              :init #ref [:api :server]
 
                               ;; component dependency list, optional
                               :using [:widget :uuid]}
@@ -43,8 +43,8 @@ TBC
              :uuid #:oc  #oc/ref :clojure.core/random-uuid
 
              ;; good old record-based component
-             :widget #:oc {:init :foobar.widget/make
-                           :config #ref [:profile]}}}
+             :widget #:oc {:create :foobar.widget/make
+                           :init #ref [:profile]}}}
 
 
 ;; in your app/system.clj:
@@ -74,8 +74,8 @@ It's **very simple** ;-) Oreo plugs into Areo's facilities and defines a couple 
 
 In your config map (the one you load using `aero.core/read-config`) add `:oc/system` key with a map that defines your system. Name your component keys as you would normally, and define them as maps with special keys. They are:
 
-- `:oc/init`  - a fully qualified, namespaced keyword or symbol referencing a function that creates your component, it will receive a single argument - the config map read from `:oc/config`.
-- `:oc/config` - a configuration map for your component, either defined inline or using `#ref` reader macro or any other facility provided by Aero (`#env`, `#or` etc) used to produce a configuration map
+- `:oc/create`  - a fully qualified, namespaced keyword or symbol referencing a function that creates your component, it will receive a single argument - the config map read from `:oc/init`.
+- `:oc/init` - a configuration map for your component, either defined inline or using `#ref` reader macro or any other facility provided by Aero (`#env`, `#or` etc) used to produce a configuration map
 - `:oc/using` - **optional** dependency list for the component, can be a vector or a map - just like Component expects it to. If missing, component will be constructed without any dependencies
 
 

@@ -30,7 +30,7 @@
       (testing "structure is there"
         (is (match? {:settings {:greeting "hello world"}
                      :http-client #'oreo.core-test/http-client
-                     :http-server {:config {:port 8080
+                     :http-server {:init {:port 8080
                                             :join? false}
                                    :settings {:greeting "hello world"}}}
                     system)))

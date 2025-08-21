@@ -25,14 +25,14 @@
   - optionally configure the component to wire dependencies into it, just like Component does"
   [system-config]
   (walk/postwalk (fn [thing]
-                   (if (and (map? thing)
-                            (:oc/init thing))
-                     (let [{:oc/keys [config init using]} thing
-                           component-create-fn' (if (or (symbol? init) (keyword? init))
-                                                  (requiring-resolve (symbol init))
-                                                  (throw (ex-info "invalid component init function" thing)))]
+                                      (if (and (map? thing)
+                            (:oc/create thing))
+                     (let [{:oc/keys [init create using]} thing
+                           component-create-fn' (if (or (symbol? create) (keyword? create))
+                                                  (requiring-resolve (symbol create))
+                                                  (throw (ex-info "invalid component create function" thing)))]
                        ;; FIXME: handle component init functions which do not accept config!
-                       (cond-> (component-create-fn' config)
+                       (cond-> (component-create-fn' init)
                          (seq using) (component/using using)))
                      thing))
                  system-config))
