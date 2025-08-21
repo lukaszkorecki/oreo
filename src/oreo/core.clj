@@ -4,31 +4,19 @@
    [clojure.walk :as walk]
    [com.stuartsierra.component :as component]))
 
-;; Support for functions as components
+;; Simplfies loading functions in configs, before we event get to the system/component
+;; assembly point
 
-(defrecord FnComponent [fun]
-  clojure.lang.IFn
-  (invoke [_this]
-    (fun))
-  (invoke [_this args]
-    (fun args)))
-
-(defrecord FnComponentWDeps [fun]
-  clojure.lang.IFn
-  (invoke [this]
-    (fun (dissoc this :fun)))
-  (invoke [this args]
-    (fun (dissoc this :fun) args)))
-
-(defmethod aero/reader 'oreo/fnc
+;; Aero reader for functions, which forces resolving the var itself
+(defmethod aero/reader 'oc/fn!
   [_opts _tag value]
-  (let [fn-component (requiring-resolve (symbol value))]
-    (->FnComponent fn-component)))
+  @(requiring-resolve (symbol value)))
 
-(defmethod aero/reader 'oreo/fnc-w-deps
+
+;; Similar to above, but returns a var
+(defmethod aero/reader 'oc/fn
   [_opts _tag value]
-  (let [fn-component (requiring-resolve (symbol value))]
-    (->FnComponentWDeps fn-component)))
+  (requiring-resolve (symbol value)))
 
 (defn resolve-system-from-config
   "Traverse system config, and for each map that has :oreo/create key do the following:
@@ -38,16 +26,14 @@
   [system-config]
   (walk/postwalk (fn [thing]
                    (if (and (map? thing)
-                            (:oreo/create thing))
-                     (let [{:oreo/keys [config create dependencies]} thing
-                           constructor' (cond
-                                          (keyword? create) (requiring-resolve (symbol create))
-                                          (instance? FnComponentWDeps create) (constantly create)
-                                          (instance? FnComponent create) (constantly create)
-                                          :else (throw (ex-info "invalid constructor" thing)))]
-
-                       (cond-> (constructor' config)
-                         dependencies (component/using dependencies)))
+                            (:oc/init thing))
+                     (let [{:oc/keys [config init using]} thing
+                           component-create-fn' (if (or (symbol? init) (keyword? init))
+                                                  (requiring-resolve (symbol init))
+                                                  (throw (ex-info "invalid component init function" thing)))]
+                       ;; FIXME: handle component init functions which do not accept config!
+                       (cond-> (component-create-fn' config)
+                         (seq using) (component/using using)))
                      thing))
                  system-config))
 
@@ -64,5 +50,5 @@
   stored under :oreo/system key"
   [config]
   (-> config
-      :oreo/system
+      :oc/system
       make-system-map))

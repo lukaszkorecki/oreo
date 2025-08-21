@@ -2,63 +2,42 @@
   (:require
    [oreo.core :as oreo]
    [aero.core :as aero]
+   [matcher-combinators.test :refer [match?]]
    [clojure.java.io :as io]
    [clojure.test :refer [deftest is testing]]
+   [utility-belt.component :as component.util]
    [com.stuartsierra.component :as component]))
-
-(defprotocol Inspectable
-  (inspect [_this] "see whats up"))
-
-(defrecord ComponentOne [config]
-  component/Lifecycle
-  (start [this] this)
-  (stop [this] this)
-  Inspectable
-  (inspect [_t] {:self :component-one :config config}))
-
-(defrecord ComponentTwo [config one three]
-  Inspectable
-  (inspect [_t] {:self :component-two
-                 :dependencies {:one (inspect one)
-                                :three (three)}}))
-
-(defn make-two [config]
-  (->ComponentTwo config nil nil))
-
-(defn component-three []
-  {:self :component-three})
-
-(defn component-four [{:keys [two] :as _deps} args]
-  {:two (inspect two)
-   :args args})
 
 (def system-config
   "test/oreo/test.edn")
 
-(deftest load-and-start
-  (let [system (-> system-config
-                   aero/read-config
-                   oreo/create-system
-                   component/start)]
+(defn handler [{:keys [component]}]
+  (let [{:keys [settings]} component]
+    {:status 200
+     :headers {"Content-Type" "text/plain"}
+     :body (format "Greeting: %s" (-> settings :greeting))}))
 
-    (testing "simple component"
-      (is (= {:config {:port 5000} :self :component-one}
-             (inspect (:one system)))))
+(defn http-client [url]
+  (slurp url))
 
-    (testing "component with dependencies"
+(deftest init-and-start-test
+  (testing "a small system is created and started"
+    (let [{:keys [http-client] :as system} (-> system-config
+                                               aero/read-config
+                                               oreo/create-system
+                                               component/start)]
 
-      (is (= {:dependencies {:one {:config {:port 5000} :self :component-one}
-                             :three {:self :component-three}}
-              :self :component-two}
-             (inspect (:two system)))))
+      (testing "structure is there"
 
-    (testing "function compoenent (no deps)"
-      (is (= {:self :component-three}
-             ((:three system)))))
+        (is (match? {:settings {:greeting "hello world"}
+                     :http-client #'oreo.core-test/http-client
+                     :http-server {:config {:port 8080
+                                            :join? false}
+                                   :settings {:greeting "hello world"}}}
+                    system)))
 
-    (testing "function component with deps"
-      (is (= {:args :test
-              :two {:dependencies {:one {:config {:port 5000} :self :component-one}
-                                   :three {:self :component-three}}
-                    :self :component-two}}
-             ((:four system) :test))))))
+      (testing "all features tested: dependency injection, function components etc"
+        (is (= "Greeting: hello world"
+               (http-client "http://localhost:8080/"))))
+
+      (component/stop system))))

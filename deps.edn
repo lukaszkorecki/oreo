@@ -10,4 +10,7 @@
 
            :test {:main-opts ["-m" "kaocha.runner"]
                   :extra-paths ["test" "dev-resources"]
-                  :extra-deps {lambdaisland/kaocha {:mvn/version "1.91.1392"}}}}}
+                  :extra-deps {lambdaisland/kaocha {:mvn/version "1.91.1392"}
+                               org.clojars.lukaszkorecki/utility-belt {:mvn/version "2.3.0"}
+                               nubank/matcher-combinators {:mvn/version "3.9.1"}
+                               ring/ring-jetty-adapter {:mvn/version "1.14.1"}}}}}
