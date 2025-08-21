@@ -1,37 +1,13 @@
-{:paths ["src"]
- :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
-            "-Duser.timezone=UTC"
-            "-Dfile.encoding=UTF-8"]
- :deps {org.clojure/clojure {:mvn/version "1.11.1"}
-        ;; logging
-        org.clojure/tools.logging {:mvn/version "1.2.4"}
-        org.slf4j/slf4j-api {:mvn/version "2.0.5"}
-        ch.qos.logback/logback-classic {:mvn/version "1.4.5"
-                                        :exclusions [org.slf4j/slf4j-api]}
-        nrepl/nrepl {:mvn/version "1.1.0-alpha1"}
-
-        ;; infra stuff: configs, frameworks
+{:paths ["src" "resources"]
+ :deps {org.clojure/clojure {:mvn/version "1.12.1"}
         aero/aero {:mvn/version "1.1.6"}
-        com.stuartsierra/component {:mvn/version "1.1.0"}
+        com.stuartsierra/component {:mvn/version "1.1.0"}}
 
-        }
-
- :aliases {;; base profile, gets merged into the rest of dev/ profiles:
-           :dev {:paths ["src" "resources" "dev-resources"]
+ :aliases {:dev {:paths ["src" "resources" "dev-resources"]
                  :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
                             "-Duser.timezone=UTC"
                             "-Dfile.encoding=UTF-8"]}
 
            :test {:main-opts ["-m" "kaocha.runner"]
-                  :paths ["test" "src" "resources" "dev-resources"]
-                  :extra-deps {lambdaisland/kaocha {:mvn/version "1.71.1119"}}}
-
-           :nrepl {:main-opts ["-m" "nrepl.cmdline"]
-                       :extra-deps {org.clojars.lukaszkorecki/rumble {:mvn/version "0.1.0-SNAPSHOT-4"}}}
-
-           :repl {:extra-deps {org.clojars.lukaszkorecki/rumble {:mvn/version "0.1.0-SNAPSHOT-4"}}}
-
-
-           :outdated {:deps {com.github.liquidz/antq {:mvn/version "2.2.962"}
-                             org.slf4j/slf4j-nop {:mvn/version "2.0.5"}}
-                      :main-opts ["-m" "antq.core"]}}}
+                  :extra-paths ["test" "dev-resources"]
+                  :extra-deps {lambdaisland/kaocha {:mvn/version "1.91.1392"}}}}}

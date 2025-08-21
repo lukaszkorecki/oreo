@@ -1,20 +1,11 @@
 {:paths ["src" "resources"]
- :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
-            "-Duser.timezone=UTC"
-            "-Dfile.encoding=UTF-8"]
- :deps {org.clojure/clojure {:mvn/version "1.11.1"}
 
-        aero/aero {:mvn/version "1.1.6"}
-        com.stuartsierra/component {:mvn/version "1.1.0"}
-        oreo/oreo { :local/root ".." }
+ :deps {org.clojure/clojure {:mvn/version "1.12.1"}
 
-                nrepl/nrepl {:mvn/version "1.0.0"}
-        }
+        oreo/oreo {:local/root ".."}}
 
-  :aliases {
-            :run {:main-opts ["-m" "foobar.core"]}
-            :nrepl {:main-opts ["-m" "nrepl.cmdline"]
-                    :extra-deps {org.clojars.lukaszkorecki/rumble {:mvn/version "0.1.0-SNAPSHOT-4"}}}
-            }
+ :aliases {:run {:main-opts ["-m" "foobar.core"]
 
-}
+                 :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
+                            "-Duser.timezone=UTC"
+                            "-Dfile.encoding=UTF-8"]}}}
