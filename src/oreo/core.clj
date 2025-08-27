@@ -2,7 +2,8 @@
   (:require
    [aero.core :as aero]
    [clojure.walk :as walk]
-   [com.stuartsierra.component :as component]))
+   [com.stuartsierra.component :as component]
+   [oreo.spec]))
 
 ;; Simplfies loading functions in configs, before we event get to the system/component
 ;; assembly point
@@ -10,12 +11,22 @@
 ;; Aero reader for functions, which forces resolving the var itself
 (defmethod aero/reader 'oc/ref!
   [_opts _tag value]
-  @(requiring-resolve (symbol value)))
+  (try
+    (deref (requiring-resolve (symbol value)))
+    (catch Exception e
+      (throw (ex-info (str "Failed to resolve var: " value) {:tag _tag
+                                                             :value value}
+                      e)))))
 
 ;; Similar to above, but returns a var
 (defmethod aero/reader 'oc/ref
   [_opts _tag value]
-  (requiring-resolve (symbol value)))
+  (try
+    (requiring-resolve (symbol value))
+    (catch Exception e
+      (throw (ex-info (str "Failed to resolve var: " value) {:tag _tag
+                                                             :value value}
+                      e)))))
 
 (defn resolve-system-from-config
   "Traverse system config, and for each map that has :oreo/create key do the following:
@@ -26,13 +37,10 @@
   (walk/postwalk (fn [thing]
                    (if (and (map? thing)
                             (:oc/create thing))
-                     (let [{:oc/keys [init create using]} thing
-                           component-create-fn' (if (or (symbol? create) (keyword? create))
-                                                  (requiring-resolve (symbol create))
-                                                  (throw (ex-info "invalid component create function" thing)))]
+                     (let [{:oc/keys [init create using]} thing]
                        (cond-> (if init
-                                 (component-create-fn' init)
-                                 (component-create-fn'))
+                                 (create init)
+                                 (create))
                          (seq using) (component/using using)))
                      thing))
                  system-config))
@@ -53,4 +61,5 @@
   ([config system-def-key]
    (-> config
        system-def-key
+       oreo.spec/validate!
        make-system-map)))

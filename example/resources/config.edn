@@ -7,11 +7,11 @@
              ;; See utility-belt.component.scheduler for more details
              ;; creates a scheduled threadpool exector with given name
              ;; shows how parts of config map can be referenced using Aero's `#ref` syntax
-             :scheduler #:oc {:create utility-belt.component.scheduler/create-pool
+             :scheduler #:oc {:create #oc/ref utility-belt.component.scheduler/create-pool
                               :init #ref [:app]}
              ;; follows from above - let's add a task to the scheduler with required config
              ;; for 'fun' we're using a keyword rather than a symbol, which is a bit more idiomatic
-             :counter #:oc {:create :utility-belt.component.scheduler/create-task
+             :counter #:oc {:create #oc/ref :utility-belt.component.scheduler/create-task
                             :init {:name "counter"
                                    :period-ms 1000
                                    ;; again - using #ref! because a function (not a var) is expected
@@ -23,7 +23,7 @@
              :tracer #oc/ref :foobar.system/tracer
 
              ;; This is a Jetty server component, which uses a handler function from the API namespace
-             :api #:oc {:create :utility-belt.component.jetty/create
+             :api #:oc {:create #oc/ref :utility-belt.component.jetty/create
                         :init {:config #ref [:api :server]
                                :handler #oc/ref! :foobar.api/handler}
                         :using [:store :tracer]}}}
