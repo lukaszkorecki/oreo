@@ -122,13 +122,13 @@ Oreo will use Clojure spec to ensure right configuration is passed, as well chec
 
 Why does this even exist? After working for nearly 10 years with Component, I run into two main issues:
 
-- system definitions end up being somewhat dynamic so it's hard to see the final shape of a system
-- a lot of configuration defined in a config map managed by Areo ends up being just initialization values for Components anyway so why not combine the two
-- "Clojure is just functions and data" - this cleans up your configuration to be truly that
+- system definitions end up being somewhat dynamic so it's hard to see the final shape of a system, typical scenario is conditionally enabling sets of components depending on run time configuration
+- a lot of configuration defined in a config map managed by Areo ends up being just initialization values for Components anyway so why not combine the two into one thing and remove some boilerplate
+
 
 ### So it's like [Integrant](https://github.com/weavejester/integrant)?
 
-Maybe. I have never used it, but it looks vaguely similar. The reason why Oreo exists is because:
+Maybe. I have never used it in anger, but it looks vaguely similar. The reason why Oreo exists is because:
 
 - Component already solved this problem, and because of its reliance on protocols and records, it can be integrated (heh) with the Java ecosystem in a more flexible way than Integrant.
 - Oreo doesn't reinvent what Aero does already - Integrant has its own notion of `ref`, etc.
@@ -136,10 +136,29 @@ Maybe. I have never used it, but it looks vaguely similar. The reason why Oreo e
 
 ### Code reloading, renaming, etc.
 
-Obviously, using Oreo clashes with reloading your code, renaming things, etc., since everything is declarative. The "normal" usage of Component is not susceptible to this because your system is defined as part of your codebase. Just be careful about reloading things.
+Obviously, using Oreo clashes with reloading your code, renaming things, etc., since everything is declarative.
+The "typical" usage of Component is not susceptible to this because your system is defined as part of regular code. Just be careful about reloading things.
+
+A way around it would be to bypass Aero layer, and use Oreo directly by passing a system map to `oreo.core/create-system`:
+
+```clojure
+(ns app.system
+  (:require [oreo.core]
+            [app.component.http :as http]
+            [app.component.postgres :as postgres]))
+
+
+(defn system []
+  (oreo.core/create-system {:db #:oc {:create postgres/create
+                                      :init {:uri "localhost"
+                                             :port 5432}}
+                            :api #:oc {:create http/create-server
+                                       :init {:port 1000}
+                                       :using [:db]}}))
+```
 
 > [!NOTE]
-> I'm thinking of ways of helping with this, I have some ideas
+> I'm thinking of ways of addressing this.
 
 
 ### I don't want to use records and protocols, they smell like Java
@@ -152,7 +171,7 @@ That's not really my or Oreo's problem, but here's what you can do:
 
 ### I don't want to define my config and system map in the same file
 
-Use `#include` - see Aero's docs for more info.
+Use `#include` - see Aero's docs for more info, or see the tip above.
 
 
 ### How do I create different variants of my system?
@@ -182,7 +201,8 @@ This should give you an idea how to put it together:
 
 ```
 
-Now when reading config via `aero/read-config` with different profile value, your system will be composed according to the profile name. Again: you have all of Aero's tools available at your disposal.
+Now when reading config via `aero/read-config` with different profile value, your system will be composed
+according to the profile name. Again: you have all of Aero's tools available at your disposal.
 
 # Status/Roadmap/TODO
 
@@ -193,7 +213,7 @@ Now when reading config via `aero/read-config` with different profile value, you
 
 - [x] Make it work in a synthetic example.
 - [x] Use in something real.
-- [ ] Finalize naming/API.
+- [ ] Finalize naming & API.
 - [ ] See if any of `utility-belt.component` utils can be merged in and/or used.
 - [ ] Somehow solve the reloading issue - hook into `tools.namespace`?
 - [ ] Use in something real and complicated.
