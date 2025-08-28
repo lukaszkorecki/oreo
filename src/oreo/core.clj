@@ -1,7 +1,6 @@
 (ns oreo.core
   (:require
    [aero.core :as aero]
-                                        ;   [clojure.walk :as walk]
    [com.stuartsierra.component :as component]
    [oreo.model]))
 
@@ -42,7 +41,7 @@
                          component (cond-> (if (contains? thing :oc/init)
                                              (create init)
                                              (create))
-                                     (seq using) (component/using using))]
+                                           (seq using) (component/using using))]
                      {name component})
                    {name thing})))))
 

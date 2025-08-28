@@ -27,12 +27,12 @@
                          (and (map? component) (contains? component :oc/create)))
                  (let [{:oc/keys [create using]} component
                        errors (cond-> {}
-                                (not (s/valid? :oc/create create))
-                                (assoc :invalid-create create)
+                                      (not (s/valid? :oc/create create))
+                                      (assoc :invalid-create create)
 
-                                (and using
-                                     (not (s/valid? :oc/using using)))
-                                (assoc :invalid-using using))]
+                                      (and using
+                                           (not (s/valid? :oc/using using)))
+                                      (assoc :invalid-using using))]
                    (when (not-empty errors)
                      {:component component
                       :errors errors})))))

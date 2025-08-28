@@ -29,8 +29,6 @@
     (is (= {:foobar #:oc {:create create :deps {:foobar :foobar}}}
            (oreo.model/validate! {:foobar #:oc {:create create :deps {:foobar :foobar}}})))))
 
-
-
 (deftest missing-create-test
   (testing "invalid component def map"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"Invalid system definition"
@@ -46,7 +44,6 @@
   (testing "`nil` is not valid"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"Invalid system definition"
                           (oreo.model/validate! {:foobar nil})))))
-
 
 (deftest test-config-verify-test
   (testing "unit test system example"
