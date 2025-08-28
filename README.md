@@ -5,7 +5,8 @@
 
 # What is this?
 
-Oreo combines [Component](https://github.com/stuartsierra/component) and [Aero](https://github.com/juxt/aero) so that you can declaratively define your system, along with the configuration of your components, in a single `config.edn` file.
+Oreo combines [Component](https://github.com/stuartsierra/component) and [Aero](https://github.com/juxt/aero) giving you
+the ability to declaratively define your system, along with the configuration of your components, in a single `config.edn` file.
 
 > [!NOTE]
 > I'm using Title-Case for the Component library and lower-case for a component to mean the **actual** components in your system.
@@ -16,7 +17,7 @@ TBC
 
 ## Annotated Example
 
-Here is an example of how you might define your system in a `config.edn` file. You can find a more detailed and working example in the [`example`](/example) directory.
+Here is an example of how you might define your system in a `config.edn` file. You can find a dummy application in the `example` which uses this config:
 
 ```clojure
 {;; your shared configuration
@@ -78,14 +79,13 @@ Here is an example of how you might define your system in a `config.edn` file. Y
 
 # How does this work?
 
-It's **very simple** ;-) Oreo plugs into Aero's facilities and defines a couple of extra reader tags to simplify looking up vars, which are used as component init functions, references to handlers, etc.
+It's **very simple** ;-) Oreo plugs into Aero's facilities and defines a couple of extra reader tags to simplify looking up vars, which are used to create component instances, references to handlers, etc.
 
 In your config map (the one you load using `aero.core/read-config`), add an `:oc/system` key with a map that defines your system. Name your component keys as you would normally, and define them as maps with special keys. They are:
 
 - `:oc/create`  - A fully qualified, namespaced keyword or symbol referencing a function that creates your component. It will receive a single argument - the config map read from `:oc/init`.
-- `:oc/init` - A configuration map for your component, either defined inline or using the `#ref` reader macro or any other facility provided by Aero (`#env`, `#or`, etc.) used to produce a configuration map.
+- `:oc/init` - **Optional**, A configuration map for your component, either defined inline or using the `#ref` reader macro or any other facility provided by Aero (`#env`, `#or`, etc.) it's used as the value passed to the component constructor (`map->MyComponent` etc)
 - `:oc/using` - **Optional** dependency list for the component. It can be a vector or a map, just like Component expects it to be. If missing, the component will be constructed without any dependencies.
-
 
 Because of Component's Lifecycle protocol works, you can also use Oreo to add stateless components to your system such as functions or static values.
 
@@ -99,7 +99,7 @@ Oreo provides two reader tags, `#oc/ref` and `#oc/ref!`, to simplify referencing
     :tracer #oc/ref :foobar.system/tracer
     ```
 
--   `#oc/ref!` should be used when you need the **value** of a var. This is useful when a component expects a function or a value directly, not a var. For example, if you have an atom defined in a namespace and you want to pass it to a component, you would use `#oc/ref!` to get the atom itself.
+-   `#oc/ref!` should be used when you need the **value** of a var. This is useful when a component expects a function or a value directly, not a var. For example, if you have an atom defined in a namespace and you want to pass it to a component as a dependency, you would use `#oc/ref!` to get the atom itself.
 
     ```clojure
     :store #oc/ref! foobar.system/store
@@ -124,7 +124,7 @@ Why does this even exist? After working for nearly 10 years with Component, I ru
 
 - system definitions end up being somewhat dynamic so it's hard to see the final shape of a system
 - a lot of configuration defined in a config map managed by Areo ends up being just initialization values for Components anyway so why not combine the two
-- "Clojure is just functions and data"
+- "Clojure is just functions and data" - this cleans up your configuration to be truly that
 
 ### So it's like [Integrant](https://github.com/weavejester/integrant)?
 
@@ -134,13 +134,12 @@ Maybe. I have never used it, but it looks vaguely similar. The reason why Oreo e
 - Oreo doesn't reinvent what Aero does already - Integrant has its own notion of `ref`, etc.
 - Most importantly, Oreo is meant to help existing Component users rather than require rewriting code.
 
-
 ### Code reloading, renaming, etc.
 
 Obviously, using Oreo clashes with reloading your code, renaming things, etc., since everything is declarative. The "normal" usage of Component is not susceptible to this because your system is defined as part of your codebase. Just be careful about reloading things.
 
 > [!NOTE]
-> I'm thinking of ways of helping with this
+> I'm thinking of ways of helping with this, I have some ideas
 
 
 ### I don't want to use records and protocols, they smell like Java
@@ -153,7 +152,7 @@ That's not really my or Oreo's problem, but here's what you can do:
 
 ### I don't want to define my config and system map in the same file
 
-Use `#include` - see [here](https://github.com/juxt/aero#include) for more information.
+Use `#include` - see Aero's docs for more info.
 
 
 ### How do I create different variants of my system?
@@ -182,6 +181,8 @@ This should give you an idea how to put it together:
                                       {:db #ref [:components :db]}]}}
 
 ```
+
+Now when reading config via `aero/read-config` with different profile value, your system will be composed according to the profile name. Again: you have all of Aero's tools available at your disposal.
 
 # Status/Roadmap/TODO
 
