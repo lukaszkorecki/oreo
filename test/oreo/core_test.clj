@@ -79,3 +79,28 @@
                                               :join? false}
                                      :settings {:greeting "hello world"}}}
                       system-after)))))))
+
+(deftest profiles-test
+  (let [create-system (fn [profile]
+                        (-> (aero/read-config "test/oreo/profile-test.edn" {:profile profile})
+                            (oreo/create-system)
+                            (component/start)
+                            (select-keys [:api :db :worker])))]
+    (testing "default profile"
+      (is (= {:api {:db {:port 543 :started? true :uri "localhost"} :port 1000 :started? true}
+              :db {:port 543 :started? true :uri "localhost"}
+              :worker {:count 3 :db {:port 543 :started? true :uri "localhost"} :started? true}}
+             ;; will use default profile
+             (create-system nil))))
+
+    (testing "api profile"
+      (is (= {:api {:db {:port 543 :started? true :uri "localhost"} :port 1000 :started? true}
+              :db {:port 543 :started? true :uri "localhost"}}
+             ;; will use default profile
+             (create-system :api))))
+
+    (testing "api profile"
+      (is (= {:worker {:count 3 :db {:port 543 :started? true :uri "localhost"} :started? true}
+              :db {:port 543 :started? true :uri "localhost"}}
+             ;; will use default profile
+             (create-system :worker))))))

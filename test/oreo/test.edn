@@ -16,7 +16,7 @@
              :http-client #oc/ref :oreo.core-test/http-client
 
              ;; stateful component but without any init options
-             :publisher #:oc{:create #oc/ref oreo.core-test/create-publisher}
+             :publisher #:oc{:create #oc/ref! oreo.core-test/create-publisher}
 
              ;; maps-as-components also work
              :dummy #:oc {:create #oc/ref! oreo.core-test/create-dummy

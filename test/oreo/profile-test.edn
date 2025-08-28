@@ -1,0 +1,18 @@
+{:db-conn {:uri "localhost"
+           :port #long #or [#env "DB_PORT" 543]}
+
+ :components {:db #:oc {:create #oc/ref oreo.core-test/create-dummy
+                        :init #ref [:db-conn]}
+              :api #:oc {:create #oc/ref oreo.core-test/create-dummy
+                         :init {:port 1000}
+                         :using [:db]}
+              :worker #:oc {:create #oc/ref oreo.core-test/create-dummy
+                            :init {:count 3}
+                            :using [:db]}}
+
+ :oc/system #profile {:default #ref [:components]
+                      :api #merge [{:api #ref [:components :api]}
+                                   {:db #ref [:components :db]}]
+
+                      :worker #merge [{:worker #ref [:components :worker]}
+                                      {:db #ref [:components :db]}]}}

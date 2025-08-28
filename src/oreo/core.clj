@@ -38,7 +38,7 @@
                    (if (and (map? thing)
                             (:oc/create thing))
                      (let [{:oc/keys [init create using]} thing]
-                       (cond-> (if init
+                       (cond-> (if (contains? thing :oc/init)
                                  (create init)
                                  (create))
                          (seq using) (component/using using)))
