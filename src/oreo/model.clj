@@ -6,7 +6,8 @@
 (s/def :oc/create #(or (fn? %) (var? %)))
 
 ;; TODO: support extended deps format from utility-belt.component/using+ ?
-(s/def :oc/using (s/coll-of keyword? :distinct true :into []))
+(s/def :oc/using (s/or :map? (s/map-of keyword? keyword?)
+                       :vec? (s/coll-of keyword? :distinct true :into [])))
 
 ;; spec for {<name> #oc{:create <qualified-symbol-or-keyword> ?:init <map> ?:using [keyword] ?}}
 (s/def ::component (s/or ;; this map is a structure that describes a component

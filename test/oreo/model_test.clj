@@ -20,8 +20,18 @@
       (testing "simple validation"
         (is (= example (oreo.model/validate! example)))))))
 
-(deftest missing-create-test
+(deftest using-specs-test
+  (testing "vector"
+    (is (= {:foobar #:oc {:create create :deps [:foobar]}}
+           (oreo.model/validate! {:foobar #:oc {:create create :deps [:foobar]}}))))
 
+  (testing "map"
+    (is (= {:foobar #:oc {:create create :deps {:foobar :foobar}}}
+           (oreo.model/validate! {:foobar #:oc {:create create :deps {:foobar :foobar}}})))))
+
+
+
+(deftest missing-create-test
   (testing "invalid component def map"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"Invalid system definition"
                           (oreo.model/validate! {:bar #:oc {:create nil}})))))
