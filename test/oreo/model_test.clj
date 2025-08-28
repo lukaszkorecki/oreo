@@ -1,5 +1,5 @@
-(ns oreo.spec-test
-  (:require [oreo.spec]
+(ns oreo.model-test
+  (:require [oreo.model]
             [oreo.core]
             [aero.core :as aero]
             [clojure.test :refer [deftest is testing]]))
@@ -17,10 +17,10 @@
                             :using [:foo :bar]}}]
 
     (testing "simple validation"
-      (is (= example (oreo.spec/validate! example))))))
+      (is (= example (oreo.model/validate! example))))))
 
 (deftest test-config-verify-test
   (testing "unit test system example"
-    (is (nil? (oreo.spec/any-invalid? (-> "test/oreo/test.edn"
-                                          (aero/read-config)
-                                          :oc/system))))))
+    (is (nil? (oreo.model/any-invalid? (-> "test/oreo/test.edn"
+                                           (aero/read-config)
+                                           :oc/system))))))

@@ -3,7 +3,7 @@
    [aero.core :as aero]
    [clojure.walk :as walk]
    [com.stuartsierra.component :as component]
-   [oreo.spec]))
+   [oreo.model]))
 
 ;; Simplfies loading functions in configs, before we event get to the system/component
 ;; assembly point
@@ -61,5 +61,5 @@
   ([config system-def-key]
    (-> config
        system-def-key
-       oreo.spec/validate!
+       oreo.model/validate!
        make-system-map)))
