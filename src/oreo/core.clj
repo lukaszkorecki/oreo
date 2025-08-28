@@ -1,7 +1,7 @@
 (ns oreo.core
   (:require
    [aero.core :as aero]
-   [clojure.walk :as walk]
+                                        ;   [clojure.walk :as walk]
    [com.stuartsierra.component :as component]
    [oreo.model]))
 
@@ -34,16 +34,17 @@
   - optionally pass component configuration stored under :oreo/config key
   - optionally configure the component to wire dependencies into it, just like Component does"
   [system-config]
-  (walk/postwalk (fn [thing]
-                   (if (and (map? thing)
-                            (:oc/create thing))
-                     (let [{:oc/keys [init create using]} thing]
-                       (cond-> (if (contains? thing :oc/init)
-                                 (create init)
-                                 (create))
-                         (seq using) (component/using using)))
-                     thing))
-                 system-config))
+  (->> system-config
+       (mapcat (fn [[name thing]]
+                 (if (and (map? thing)
+                          (:oc/create thing))
+                   (let [{:oc/keys [init create using]} thing
+                         component (cond-> (if (contains? thing :oc/init)
+                                             (create init)
+                                             (create))
+                                     (seq using) (component/using using))]
+                     {name component})
+                   {name thing})))))
 
 (defn make-system-map
   "Process system config, resolve all components and return component/SystemMap instance"
@@ -59,7 +60,6 @@
   ([config]
    (create-system config :oc/system))
   ([config system-def-key]
-   (-> config
-       system-def-key
+   (-> (get config system-def-key)
        oreo.model/validate!
        make-system-map)))
