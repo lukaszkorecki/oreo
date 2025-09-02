@@ -10,15 +10,15 @@
                                 :init {:config {:port 8080}
                                        ;; we're using fn! because jetty component does a strict check on arguments and requires :handler to pass `fn?`
                                        ;; as precondition
-                                       :handler #oc/ref! oreo.core-test/handler}
+                                       :handler #oc/deref oreo.core-test/handler}
                                 :using [:settings :publisher]}
              ;; functions can be used as components, and we can use keywords rather than symbols
              :http-client #oc/ref :oreo.core-test/http-client
 
              ;; stateful component but without any init options
-             :publisher #:oc{:create #oc/ref! oreo.core-test/create-publisher}
+             :publisher #:oc{:create #oc/deref oreo.core-test/create-publisher}
 
              ;; maps-as-components also work
-             :dummy #:oc {:create #oc/ref! oreo.core-test/create-dummy
+             :dummy #:oc {:create #oc/deref oreo.core-test/create-dummy
                           :init {:started? false}
                           :using [:settings]}}}

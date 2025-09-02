@@ -2,7 +2,7 @@
  :api {:server {:port 1002}}
 
  :oc/system {;; We're using `ref!` here to get the actual atom from the var
-             :store #oc/ref! foobar.system/store
+             :store #oc/deref foobar.system/store
 
              ;; See utility-belt.component.scheduler for more details
              ;; creates a scheduled threadpool exector with given name
@@ -15,7 +15,7 @@
                             :init {:name "counter"
                                    :period-ms 1000
                                    ;; again - using #ref! because a function (not a var) is expected
-                                   :handler #oc/ref! foobar.scheduler/task-counter}
+                                   :handler #oc/deref foobar.scheduler/task-counter}
                             ;; dependency injection demo - the task will be able to access the scheduler component as well as the store
                             :using [:scheduler :store]}
 
@@ -25,5 +25,5 @@
              ;; This is a Jetty server component, which uses a handler function from the API namespace
              :api #:oc {:create #oc/ref :utility-belt.component.jetty/create
                         :init {:config #ref [:api :server]
-                               :handler #oc/ref! :foobar.api/handler}
+                               :handler #oc/deref :foobar.api/handler}
                         :using [:store :tracer]}}}

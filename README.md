@@ -27,12 +27,12 @@ Here is an example of how you might define your system in a `config.edn` file. Y
  ;; your system definition, it can be here or in a different file
  ;; merged by using #include reader macro, use #profile etc etc
  :oc/system {;; We're using `ref!` here to get the actual atom from the var
-             :store #oc/ref! foobar.system/store
+             :store #oc/deref foobar.system/store
 
              ;; See utility-belt.component.scheduler for more details
              ;; creates a scheduled threadpool exector with given name
              ;; shows how parts of config map can be referenced using Aero's `#ref` syntax
-             :scheduler #:oc {:create #oc/ref! utility-belt.component.scheduler/create-pool
+             :scheduler #:oc {:create #oc/deref utility-belt.component.scheduler/create-pool
                               :init #ref [:app]}
              ;; follows from above - let's add a task to the scheduler with required config
              ;; for 'fun' we're using a keyword rather than a symbol, which is a bit more idiomatic
@@ -41,7 +41,7 @@ Here is an example of how you might define your system in a `config.edn` file. Y
                             :init {:name "counter"
                                    :period-ms 1000
                                    ;; again - using #ref! because a function (not a var) is expected
-                                   :handler #oc/ref! foobar.scheduler/task-counter}
+                                   :handler #oc/deref foobar.scheduler/task-counter}
                             ;; dependency injection demo - the task will be able to access the scheduler component as well as the store
                             :using [:scheduler :store]}
 
@@ -51,7 +51,7 @@ Here is an example of how you might define your system in a `config.edn` file. Y
              ;; This is a Jetty server component, which uses a handler function from the API namespace
              :api #:oc {:create :utility-belt.component.jetty/create
                         :init {:config #ref [:api :server]
-                               :handler #oc/ref! :foobar.api/handler}
+                               :handler #oc/deref :foobar.api/handler}
                         :using [:store :tracer]}}}
 
 
@@ -91,7 +91,7 @@ Because of Component's Lifecycle protocol works, you can also use Oreo to add st
 
 ## When to use which tag?
 
-Oreo provides two reader tags, `#oc/ref` and `#oc/ref!`, to simplify referencing functions and values in your configuration. Here’s how to choose between them:
+Oreo provides two reader tags, `#oc/ref` and `#oc/deref`, to simplify referencing functions and values in your configuration. Here’s how to choose between them:
 
 -   `#oc/ref` should be used when you need to reference a **var** itself, not the value it contains. A good example of this is a "stateless" component that is just a function.
 
@@ -99,16 +99,16 @@ Oreo provides two reader tags, `#oc/ref` and `#oc/ref!`, to simplify referencing
     :tracer #oc/ref :foobar.system/tracer
     ```
 
--   `#oc/ref!` should be used when you need the **value** of a var. This is useful when a component expects a function or a value directly, not a var. For example, if you have an atom defined in a namespace and you want to pass it to a component as a dependency, you would use `#oc/ref!` to get the atom itself.
+-   `#oc/deref` should be used when you need the **value** of a var. This is useful when a component expects a function or a value directly, not a var. For example, if you have an atom defined in a namespace and you want to pass it to a component as a dependency, you would use `#oc/deref` to get the atom itself.
 
     ```clojure
-    :store #oc/ref! foobar.system/store
+    :store #oc/deref foobar.system/store
     ```
 
-    Similarly, if a component expects a handler function, you would use `#oc/ref!` to pass the function itself, not the var that holds it.
+    Similarly, if a component expects a handler function, you would use `#oc/deref` to pass the function itself, not the var that holds it.
 
     ```clojure
-    :handler #oc/ref! :foobar.api/handler
+    :handler #oc/deref :foobar.api/handler
     ```
 
 ## Validations

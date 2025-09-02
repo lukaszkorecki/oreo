@@ -8,7 +8,7 @@
 ;; assembly point
 
 ;; Aero reader for functions, which forces resolving the var itself
-(defmethod aero/reader 'oc/ref!
+(defmethod aero/reader 'oc/deref
   [_opts _tag value]
   (try
     (deref (requiring-resolve (symbol value)))

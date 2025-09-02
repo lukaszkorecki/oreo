@@ -7,9 +7,9 @@
 
 (defn -main
   [& _args]
-  (component/start (system/create))
-  (lifecycle/add-shutdown-hook :system-shutdown
-                               #(component/stop (system/create)))
+  (let [system (component/start (system/create))]
+    (lifecycle/add-shutdown-hook :system-shutdown
+                                 #(component/stop system))
 
-  (log/infof "Run `curl http://localhost:%s` to test that the system is working"
-             (-> system/config :api :server :port)))
+    (log/infof "Run `curl http://localhost:%s` to test that the system is working"
+               (-> system/config :api :server :port))))
