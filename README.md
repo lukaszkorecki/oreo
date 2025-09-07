@@ -139,7 +139,61 @@ Maybe. I have never used it in anger, but it looks vaguely similar. The reason w
 Obviously, using Oreo clashes with reloading your code, renaming things, etc., since everything is declarative.
 The "typical" usage of Component is not susceptible to this because your system is defined as part of regular code. Just be careful about reloading things.
 
-A way around it would be to bypass Aero layer, and use Oreo directly by passing a system map to `oreo.core/create-system`:
+
+There are two options:
+
+#### Instruct `tools.namespace` to reload your system namespace
+
+Let's say your `app.system` looks like this:
+
+```clojure
+(ns app.system
+  (:require .... ))
+
+(defn production []
+  (oreo/create-system (config/load-config :production)))
+
+(defn development []
+  (oreo/create-system (config/load-config :development)))
+
+```
+
+
+Then in your `app.repl` (or `app.user` or whatever), you'd do something like this:
+
+
+```clojure
+(require '[clojure.tools.namespace.repl :as tn.repl]
+         '[com.stuartsierra.component :as component]
+         'app.system)
+
+(defn start []
+   (let [system (app.system/development)]
+     (component/start (component/map->SystemMap system))))
+
+
+(def sys nil)
+
+
+(defn go []
+  ;; instruct t.n.repl tracker to always reload system namespace
+  (alter-meta! (find-ns 'app.system) merge { ::tn.repl/load true ::tn.repl/unload true})
+  (tn.repl/refresh)
+  (alter-var-root #'sys (fn [sys] (when-not sys (start))))
+  :ready)
+
+(defn stop []
+  (alter-var-root #'sys (fn [sys]
+                          (when sys
+                            (component/stop sys)
+                            nil)))
+  :stopped)
+```
+
+
+#### Alternatively....
+
+Another way around it would be to bypass Aero layer, and use Oreo directly by passing a system map to `oreo.core/create-system`:
 
 ```clojure
 (ns app.system
@@ -157,11 +211,10 @@ A way around it would be to bypass Aero layer, and use Oreo directly by passing 
                                        :using [:db]}}))
 ```
 
-> [!NOTE]
-> I'm thinking of ways of addressing this.
+This is less desirable approach as it invalidates most of the benefits of using Oreo (and Aero).
 
 
-### I don't want to use records and protocols, they smell like Java
+### I don't want to use records and protocols, they smell like Java ☕️
 
 That's not really my or Oreo's problem, but here's what you can do:
 
