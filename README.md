@@ -48,8 +48,8 @@ An example web-server component would be defined as such:
 
 ;; config.edn
 {:oc/system {:web-server #:oc {:create #oc/ref app.component.http-server/create
-                               :init {:port 8080
-                                      :handler #oc/deref app.http/api-handler }
+                               :init {:port #long #or [#env PORT 8080]
+                                      :handler #oc/deref app.http/api-handle}
                                :using [:db :redis ]}
              :db #:oc {...}
              :redis #:oc {...}}}
