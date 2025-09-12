@@ -1,5 +1,5 @@
 {:paths ["src" "resources"]
- :deps {org.clojure/clojure {:mvn/version "1.12.1"}
+ :deps {org.clojure/clojure {:mvn/version "1.12.2"}
         aero/aero {:mvn/version "1.1.6"}
         com.stuartsierra/component {:mvn/version "1.1.0"}}
 
@@ -11,6 +11,10 @@
            :test {:main-opts ["-m" "kaocha.runner"]
                   :extra-paths ["test" "dev-resources"]
                   :extra-deps {lambdaisland/kaocha {:mvn/version "1.91.1392"}
-                               org.clojars.lukaszkorecki/utility-belt {:mvn/version "2.3.0"}
-                               nubank/matcher-combinators {:mvn/version "3.9.1"}
-                               ring/ring-jetty-adapter {:mvn/version "1.14.1"}}}}}
+                               org.clojars.lukaszkorecki/utility-belt {:mvn/version "2.3.1"}
+                               nubank/matcher-combinators {:mvn/version "3.9.2"}
+                               ring/ring-jetty-adapter {:mvn/version "1.14.2"}}}
+
+           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.10"}
+                          slipset/deps-deploy {:mvn/version "0.2.2"}}
+                   :ns-default build}}}
