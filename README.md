@@ -13,7 +13,20 @@ the ability to declaratively define your system, along with the configuration of
 
 # Installation
 
-TBC
+
+- `deps.edn` - bleeding edge:
+
+```clojure
+
+lukaszkorecki/oreo {:git/url "https://github.com/lukaszkorecki/oreo.git"
+                    :git/sha "<SHA>"}
+
+```
+
+- stable-ish releases:
+
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/oreo.svg)](https://clojars.org/org.clojars.lukaszkorecki/oreo)
+
 
 ## Annotated Example
 
