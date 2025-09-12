@@ -28,6 +28,64 @@ lukaszkorecki/oreo {:git/url "https://github.com/lukaszkorecki/oreo.git"
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/oreo.svg)](https://clojars.org/org.clojars.lukaszkorecki/oreo)
 
 
+
+
+# How does this work?
+
+It's **very simple** ;-) Oreo plugs into Aero's facilities and defines a couple of extra reader tags to simplify looking up vars, which are used to create component instances, references to handlers, etc.
+
+In your config map (the one you load using `aero.core/read-config`), add an `:oc/system` key with a map that defines your system. Name your component keys as you would normally, and define them as maps with special keys. They are:
+
+- `:oc/create`  - A fully qualified, namespaced keyword or symbol referencing a function that creates your component read via `#oc/ref` or `#oc/deref` tag (see below). This function will receive a single argument - the config map read from `:oc/init`.
+- `:oc/init` - **Optional**, A configuration map for your component, either defined inline or using the `#ref` reader macro or any other facility provided by Aero (`#env`, `#or`, etc.) it's used as the value passed to the component construction provided in `:oc/create`. Use `#oc/ref` or `#oc/deref` to reference vars used in component configuration such as handler functions.
+- `:oc/using` - **Optional** dependency list for the component. It can be a vector or a map, just like Component expects it to be. If missing, the component will be constructed without any dependencies.
+
+Because of Component's Lifecycle protocol works, you can also use Oreo to add stateless components to your system such as functions or static values.
+
+An example web-server component would be defined as such:
+
+```clojure
+
+;; config.edn
+{:oc/system {:web-server #:oc {:create #oc/ref app.component.http-server/create
+                               :init {:port 8080
+                                      :handler #oc/deref app.http/api-handler }
+                               :using [:db :redis ]}
+             :db #:oc {...}
+             :redis #:oc {...}}}
+
+```
+
+As you can see there's a couple more things here: `#oc/ref` and `#oc/deref` tags, which are used to provide component constructor functions.
+
+
+## When to use `#oc/ref` or `#oc/deref`?
+
+Oreo provides two reader tags, `#oc/ref` and `#oc/deref`, to simplify referencing functions and values in your configuration. Here’s how to choose between them:
+
+-   `#oc/ref` should be used when you need to reference a **var** itself, not the value it contains. A good example of this is a "stateless" component that is just a function.
+
+    ```clojure
+    :tracer #oc/ref :foobar.system/tracer
+    ```
+    it can be later destructured from the system and called just like any other function.
+
+-   `#oc/deref` should be used when you need the **value** of a var. This is useful when a component's `:oc/init` needs to provide  a function or a value directly, not a var. For example, if you have an atom defined in a namespace and you want to pass it to a component as a dependency, you would use `#oc/deref` to get the atom itself.
+
+    ```clojure
+    :store #oc/deref foobar.system/store
+    ```
+
+    Similarly, if a component expects a handler function, you would use `#oc/deref` to pass the function itself, not the var that holds it.
+
+    ```clojure
+    :handler #oc/deref :foobar.api/handler
+    ```
+
+## Validations
+
+Oreo will use Clojure spec to ensure right configuration is passed, as well checks to ensure that dependencies specified in `:using` are also present in the system.
+
 ## Annotated Example
 
 Here is an example of how you might define your system in a `config.edn` file. You can find a dummy application in the `example` which uses this config:
@@ -39,7 +97,7 @@ Here is an example of how you might define your system in a `config.edn` file. Y
 
  ;; your system definition, it can be here or in a different file
  ;; merged by using #include reader macro, use #profile etc etc
- :oc/system {;; We're using `ref!` here to get the actual atom from the var
+ :oc/system {;; We're using `deref` here to get the actual atom from the var
              :store #oc/deref foobar.system/store
 
              ;; See utility-belt.component.scheduler for more details
@@ -53,12 +111,12 @@ Here is an example of how you might define your system in a `config.edn` file. Y
              :counter #:oc {:create #oc/ref :utility-belt.component.scheduler/create-task
                             :init {:name "counter"
                                    :period-ms 1000
-                                   ;; again - using #ref! because a function (not a var) is expected
+                                   ;; again - using #deref because a function (not a var) is expected
                                    :handler #oc/deref foobar.scheduler/task-counter}
                             ;; dependency injection demo - the task will be able to access the scheduler component as well as the store
                             :using [:scheduler :store]}
 
-             ;; demo of stateless component, which is just a function, and doesn't need to be `#ref!`ed
+             ;; demo of stateless component, which is just a function, and doesn't need to be `#deref`ed
              :tracer #oc/ref :foobar.system/tracer
 
              ;; This is a Jetty server component, which uses a handler function from the API namespace
@@ -89,44 +147,6 @@ Here is an example of how you might define your system in a `config.edn` file. Y
       ;; and start it
       component/start))
 ```
-
-# How does this work?
-
-It's **very simple** ;-) Oreo plugs into Aero's facilities and defines a couple of extra reader tags to simplify looking up vars, which are used to create component instances, references to handlers, etc.
-
-In your config map (the one you load using `aero.core/read-config`), add an `:oc/system` key with a map that defines your system. Name your component keys as you would normally, and define them as maps with special keys. They are:
-
-- `:oc/create`  - A fully qualified, namespaced keyword or symbol referencing a function that creates your component. It will receive a single argument - the config map read from `:oc/init`.
-- `:oc/init` - **Optional**, A configuration map for your component, either defined inline or using the `#ref` reader macro or any other facility provided by Aero (`#env`, `#or`, etc.) it's used as the value passed to the component constructor (`map->MyComponent` etc)
-- `:oc/using` - **Optional** dependency list for the component. It can be a vector or a map, just like Component expects it to be. If missing, the component will be constructed without any dependencies.
-
-Because of Component's Lifecycle protocol works, you can also use Oreo to add stateless components to your system such as functions or static values.
-
-## When to use which tag?
-
-Oreo provides two reader tags, `#oc/ref` and `#oc/deref`, to simplify referencing functions and values in your configuration. Here’s how to choose between them:
-
--   `#oc/ref` should be used when you need to reference a **var** itself, not the value it contains. A good example of this is a "stateless" component that is just a function.
-
-    ```clojure
-    :tracer #oc/ref :foobar.system/tracer
-    ```
-
--   `#oc/deref` should be used when you need the **value** of a var. This is useful when a component expects a function or a value directly, not a var. For example, if you have an atom defined in a namespace and you want to pass it to a component as a dependency, you would use `#oc/deref` to get the atom itself.
-
-    ```clojure
-    :store #oc/deref foobar.system/store
-    ```
-
-    Similarly, if a component expects a handler function, you would use `#oc/deref` to pass the function itself, not the var that holds it.
-
-    ```clojure
-    :handler #oc/deref :foobar.api/handler
-    ```
-
-## Validations
-
-Oreo will use Clojure spec to ensure right configuration is passed, as well checks to ensure that dependencies specified in `:using` are also present in the system.
 
 
 # Caveats, Gotchas, Notes, Q&A and Tips & Tricks

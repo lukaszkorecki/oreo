@@ -1,25 +1,25 @@
 {:app {:name "foobar"}
  :api {:server {:port 1002}}
 
- :oc/system {;; We're using `ref!` here to get the actual atom from the var
-             :store #oc/deref foobar.system/store
+ :oc/system {;; We're using `#oc/deref` here to get the actual atom from the var
+             :store #oc/deref :foobar.system/store
 
              ;; See utility-belt.component.scheduler for more details
              ;; creates a scheduled threadpool exector with given name
              ;; shows how parts of config map can be referenced using Aero's `#ref` syntax
-             :scheduler #:oc {:create #oc/ref utility-belt.component.scheduler/create-pool
+             :scheduler #:oc {:create #oc/ref :utility-belt.component.scheduler/create-pool
                               :init #ref [:app]}
              ;; follows from above - let's add a task to the scheduler with required config
              ;; for 'fun' we're using a keyword rather than a symbol, which is a bit more idiomatic
              :counter #:oc {:create #oc/ref :utility-belt.component.scheduler/create-task
                             :init {:name "counter"
                                    :period-ms 1000
-                                   ;; again - using #ref! because a function (not a var) is expected
-                                   :handler #oc/deref foobar.scheduler/task-counter}
+                                   ;; again - using #deref because a function (not a var) is expected
+                                   :handler #oc/deref :foobar.scheduler/task-counter}
                             ;; dependency injection demo - the task will be able to access the scheduler component as well as the store
                             :using [:scheduler :store]}
 
-             ;; demo of stateless component, which is just a function, and doesn't need to be `#ref!`ed
+             ;; demo of stateless component, which is just a function, and doesn't need to be `#deref`ed
              :tracer #oc/ref :foobar.system/tracer
 
              ;; This is a Jetty server component, which uses a handler function from the API namespace
