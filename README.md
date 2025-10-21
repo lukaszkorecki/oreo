@@ -1,7 +1,9 @@
 # Oreo
 
 > [!WARNING]
-> This is not even pre-alpha quality software; expect breakage!
+> Early days - Oreo is used in a couple of backend and web services that I have running, doing Real Life Work™️
+> but it still has not been used in multi-system applications with large number of Components and non-trivial setups.
+> That said, It Works®️
 
 # What is this?
 
