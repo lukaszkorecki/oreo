@@ -38,7 +38,7 @@ It's **very simple** ;-) Oreo plugs into Aero's facilities and defines a couple 
 
 In your config map (the one you load using `aero.core/read-config`), add an `:oc/system` key with a map that defines your system. Name your component keys as you would normally, and define them as maps with special keys. They are:
 
-- `:oc/create`  - A fully qualified, namespaced keyword or symbol referencing a function that creates your component read via `#oc/ref` or `#oc/deref` tag (see below). This function will receive a single argument - the config map read from `:oc/init`.
+- `:oc/create`  - A fully qualified, namespaced keyword referencing a function that creates your component read via `#oc/ref` or `#oc/deref` tag (see below). This function will receive a single argument - the config map read from `:oc/init`.
 - `:oc/init` - **Optional**, A configuration map for your component, either defined inline or using the `#ref` reader macro or any other facility provided by Aero (`#env`, `#or`, etc.) it's used as the value passed to the component construction provided in `:oc/create`. Use `#oc/ref` or `#oc/deref` to reference vars used in component configuration such as handler functions.
 - `:oc/using` - **Optional** dependency list for the component. It can be a vector or a map, just like Component expects it to be. If missing, the component will be constructed without any dependencies.
 
@@ -108,7 +108,6 @@ Here is an example of how you might define your system in a `config.edn` file. Y
              :scheduler #:oc {:create #oc/deref utility-belt.component.scheduler/create-pool
                               :init #ref [:app]}
              ;; follows from above - let's add a task to the scheduler with required config
-             ;; for 'fun' we're using a keyword rather than a symbol, which is a bit more idiomatic
              ;; and we are using #ref to return a var rather than a function, in case of `:create` key - either will work
              :counter #:oc {:create #oc/ref :utility-belt.component.scheduler/create-task
                             :init {:name "counter"
