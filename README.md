@@ -300,8 +300,9 @@ according to the profile name. Again: you have all of Aero's tools available at 
 
 - [x] Make it work in a synthetic example.
 - [x] Use in something real.
-- [ ] Finalize naming & API.
+- [ ] Finalize ~~naming &~~ API.
 - [ ] See if any of `utility-belt.component` utils can be merged in and/or used.
 - [ ] Somehow solve the reloading issue - hook into `tools.namespace`?
-- [ ] Use in something real and complicated.
-- [ ] Clojars release.
+- [x] Use in something real and complicated.
+- [ ] Use in something even more real and even more comlicated.
+- [x] Clojars release.
