@@ -1,96 +1,108 @@
 # Oreo
 
-> [!WARNING]
-> Early days - Oreo is used in a couple of backend and web services that I have running, doing Real Life Work™️
-> but it still has not been used in multi-system applications with large number of Components and non-trivial setups.
-> That said, It Works®️
-
-# What is this?
-
-Oreo combines [Component](https://github.com/stuartsierra/component) and [Aero](https://github.com/juxt/aero) giving you
-the ability to declaratively define your system, along with the configuration of your components, in a single `config.edn` file.
+Oreo combines [Component](https://github.com/stuartsierra/component) and [Aero](https://github.com/juxt/aero), giving you
+the ability to declaratively define your system — along with the configuration of your components — in a single `config.edn` file.
 
 > [!NOTE]
 > I'm using Title-Case for the Component library and lower-case for a component to mean the **actual** components in your system.
 
 # Installation
 
-
 - `deps.edn` - bleeding edge:
 
 ```clojure
-
 lukaszkorecki/oreo {:git/url "https://github.com/lukaszkorecki/oreo.git"
                     :git/sha "<SHA>"}
-
 ```
 
-- stable-ish releases:
+- stable releases:
 
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/oreo.svg)](https://clojars.org/org.clojars.lukaszkorecki/oreo)
 
 
-
-
 # How does this work?
 
-It's **very simple** ;-) Oreo plugs into Aero's facilities and defines a couple of extra reader tags to simplify looking up vars, which are used to create component instances, references to handlers, etc.
+Oreo plugs into Aero's reader tag system and defines two extra tags (`#oc/ref` and `#oc/deref`) to resolve vars at config-read time. Your entire system is defined declaratively under an `:oc/system` key in your Aero config.
 
-In your config map (the one you load using `aero.core/read-config`), add an `:oc/system` key with a map that defines your system. Name your component keys as you would normally, and define them as maps with special keys. They are:
+Each component is a map using qualified keywords in the `:oc` namespace:
 
-- `:oc/create`  - A fully qualified, namespaced keyword or symbol referencing a function that creates your component read via `#oc/ref` or `#oc/deref` tag (see below). This function will receive a single argument - the config map read from `:oc/init`.
-- `:oc/init` - **Optional**, A configuration map for your component, either defined inline or using the `#ref` reader macro or any other facility provided by Aero (`#env`, `#or`, etc.) it's used as the value passed to the component construction provided in `:oc/create`. Use `#oc/ref` or `#oc/deref` to reference vars used in component configuration such as handler functions.
-- `:oc/using` - **Optional** dependency list for the component. It can be a vector or a map, just like Component expects it to be. If missing, the component will be constructed without any dependencies.
+- `:oc/create` — **Required.** A component constructor, resolved via `#oc/ref` or `#oc/deref` (see below). If `:oc/init` is present, the constructor is called with the init map as its single argument. If `:oc/init` is absent, the constructor is called with no arguments.
+- `:oc/init` — **Optional.** A configuration map passed to the constructor. Can use any Aero feature (`#ref`, `#env`, `#or`, `#profile`, etc.).
+- `:oc/using` — **Optional.** A dependency list, exactly as Component expects: a vector (`[:db :cache]`) or a map (`{:database :db}`). If missing, the component has no dependencies.
 
-Because of Component's Lifecycle protocol works, you can also use Oreo to add stateless components to your system such as functions or static values.
+Because of how Component's Lifecycle protocol works, you can also add stateless components to your system — plain functions or static values.
 
-An example web-server component would be defined as such:
+A quick example:
 
 ```clojure
-
 ;; config.edn
-{:oc/system {:web-server #:oc {:create #oc/ref app.component.http-server/create
+{:oc/system {:web-server #:oc {:create #oc/ref :app.component.http-server/create
                                :init {:port #long #or [#env PORT 8080]
-                                      :handler #oc/deref app.http/api-handle}
-                               :using [:db :redis ]}
-             :db #:oc {...}
-             :redis #:oc {...}}}
-
+                                      :handler #oc/deref :app.http/api-handler}
+                               :using [:db :redis]}
+             :db #:oc {:create #oc/ref :app.component.db/create
+                       :init {:uri #env "DATABASE_URL"}}
+             :redis #:oc {:create #oc/ref :app.component.redis/create
+                          :init {:uri #env "REDIS_URL"}}}}
 ```
 
-As you can see there's a couple more things here: `#oc/ref` and `#oc/deref` tags, which are used to provide component constructor functions.
+## Reader tags: `#oc/ref` and `#oc/deref`
 
+Oreo provides two Aero reader tags for resolving vars in your configuration. These are **not** the same as Aero's built-in `#ref` (which navigates within the config map) — they resolve Clojure vars from your codebase at config-read time.
 
-## When to use `#oc/ref` or `#oc/deref`?
+Both tags accept either a **keyword** or a **symbol** — internally, both are converted via `(symbol value)` and passed to `requiring-resolve`, so `#oc/ref :my.ns/create` and `#oc/ref my.ns/create` are equivalent. Keywords are slightly more idiomatic in EDN.
 
-Oreo provides two reader tags, `#oc/ref` and `#oc/deref`, to simplify referencing functions and values in your configuration. Here’s how to choose between them:
+### `#oc/ref` — resolve a var
 
--   `#oc/ref` should be used when you need to reference a **var** itself, not the value it contains. A good example of this is a "stateless" component that is just a function.
+Returns the var itself (without dereferencing it). Use this for:
 
-    ```clojure
-    :tracer #oc/ref :foobar.system/tracer
-    ```
-    it can be later destructured from the system and called just like any other function.
+- **Component constructors** in `:oc/create` — the var is then called as a function:
 
--   `#oc/deref` should be used when you need the **value** of a var. This is useful when a component's `:oc/init` needs to provide  a function or a value directly, not a var. For example, if you have an atom defined in a namespace and you want to pass it to a component as a dependency, you would use `#oc/deref` to get the atom itself.
+  ```clojure
+  :api #:oc {:create #oc/ref :app.component.http/create
+             :init {:port 8080}}
+  ```
 
-    ```clojure
-    :store #oc/deref foobar.system/store
-    ```
+- **Stateless function components** — the var can be called directly by other components:
 
-    Similarly, if a component expects a handler function, you would use `#oc/deref` to pass the function itself, not the var that holds it.
+  ```clojure
+  :tracer #oc/ref :app.system/tracer
+  ```
 
-    ```clojure
-    :handler #oc/deref :foobar.api/handler
-    ```
+### `#oc/deref` — resolve and dereference a var
+
+Returns the **value** the var points to, not the var itself. Use this when you need the actual runtime value:
+
+- **Atoms or other reference types** as top-level components:
+
+  ```clojure
+  :store #oc/deref :app.system/store
+  ```
+
+- **Handler functions** inside `:oc/init` — when the component expects a function value, not a var:
+
+  ```clojure
+  :init {:handler #oc/deref :app.api/handler}
+  ```
+
+### When does the difference matter?
+
+In most cases, calling a var and calling the function it holds behave the same — Clojure vars implement `IFn` and delegate to their value. The distinction matters when:
+
+- You need the **actual object** (an atom, a map, a connection) rather than a callable reference — use `#oc/deref`
+- You want **var indirection** for REPL reloading (redefining the function updates the var in place) — use `#oc/ref`
 
 ## Validations
 
-Oreo will use Clojure spec to ensure right configuration is passed, as well checks to ensure that dependencies specified in `:using` are also present in the system.
+Oreo uses Clojure spec to validate your system definition before creating the system map. It checks that:
 
-## Annotated Example
+- Every `:oc/create` value is a function or var
+- Every `:oc/using` entry is a vector of keywords or a map
+- All dependencies listed in `:oc/using` actually exist as keys in the system
 
-Here is an example of how you might define your system in a `config.edn` file. You can find a dummy application in the `example` which uses this config:
+## Annotated example
+
+Here is a full example. A working version lives in the `example/` directory:
 
 ```clojure
 {;; your shared configuration
@@ -99,30 +111,26 @@ Here is an example of how you might define your system in a `config.edn` file. Y
 
  ;; your system definition, it can be here or in a different file
  ;; merged by using #include reader macro, use #profile etc etc
- :oc/system {;; We're using `deref` here to get the actual atom from the var
-             :store #oc/deref foobar.system/store
+ :oc/system {;; An atom as a top-level component — #oc/deref gets the atom value
+             :store #oc/deref :foobar.system/store
 
-             ;; See utility-belt.component.scheduler for more details
-             ;; creates a scheduled threadpool exector with given name
-             ;; shows how parts of config map can be referenced using Aero's `#ref` syntax
-             :scheduler #:oc {:create #oc/deref utility-belt.component.scheduler/create-pool
+             ;; Component with config pulled from elsewhere in the EDN via Aero's #ref
+             :scheduler #:oc {:create #oc/ref :utility-belt.component.scheduler/create-pool
                               :init #ref [:app]}
-             ;; follows from above - let's add a task to the scheduler with required config
-             ;; for 'fun' we're using a keyword rather than a symbol, which is a bit more idiomatic
-             ;; and we are using #ref to return a var rather than a function, in case of `:create` key - either will work
+
+             ;; Depends on :scheduler and :store, uses a keyword for :create (equivalent to a symbol)
              :counter #:oc {:create #oc/ref :utility-belt.component.scheduler/create-task
                             :init {:name "counter"
                                    :period-ms 1000
-                                   ;; again - using #deref because a function (not a var) is expected
-                                   :handler #oc/deref foobar.scheduler/task-counter}
-                            ;; dependency injection demo - the task will be able to access the scheduler component as well as the store
+                                   ;; #oc/deref because the component expects a function value
+                                   :handler #oc/deref :foobar.scheduler/task-counter}
                             :using [:scheduler :store]}
 
-             ;; demo of stateless component, which is just a function, and doesn't need to be `#deref`ed
+             ;; A stateless component — just a function var, no lifecycle needed
              :tracer #oc/ref :foobar.system/tracer
 
-             ;; This is a Jetty server component, which uses a handler function from the API namespace
-             :api #:oc {:create :utility-belt.component.jetty/create
+             ;; Jetty server component with a Ring handler
+             :api #:oc {:create #oc/ref :utility-belt.component.jetty/create
                         :init {:config #ref [:api :server]
                                :handler #oc/deref :foobar.api/handler}
                         :using [:store :tracer]}}}
@@ -144,42 +152,54 @@ Here is an example of how you might define your system in a `config.edn` file. Y
 ;; fn to start the system
 (defn start []
   (-> config
-      ;; use ^^^ to expand into system map
       oreo/create-system
-      ;; and start it
       component/start))
 ```
 
+# Rationale
 
-# Caveats, Gotchas, Notes, Q&A and Tips & Tricks
+Why does this even exist? After working for nearly 10 years with Component, I ran into two recurring issues:
 
-### Rationalle
+- System definitions end up being somewhat dynamic, so it's hard to see the final shape of a system. A typical scenario is conditionally enabling sets of components depending on runtime configuration.
+- A lot of configuration managed by Aero ends up being just initialization values for Components anyway — so why not combine the two and remove the boilerplate?
 
-Why does this even exist? After working for nearly 10 years with Component, I run into two main issues:
+Oreo is the answer: a thin layer (~370 lines total) that connects two proven libraries, adding only what's needed to bridge them.
 
-- system definitions end up being somewhat dynamic so it's hard to see the final shape of a system, typical scenario is conditionally enabling sets of components depending on run time configuration
-- a lot of configuration defined in a config map managed by Areo ends up being just initialization values for Components anyway so why not combine the two into one thing and remove some boilerplate
+## How does Oreo compare to other approaches?
+
+There are several libraries in the Clojure ecosystem that solve the "application state and lifecycle" problem. They're all good libraries with thoughtful designs. Oreo exists for people who are already invested in Component and Aero, or who want a minimal solution that doesn't reinvent what those libraries already do well.
+
+### vs [Integrant](https://github.com/weavejester/integrant)
+
+Integrant is the closest in spirit — it's also data-driven, defining your system as an EDN map. The key differences:
+
+- **Lifecycle dispatch**: Integrant uses multimethods (`init-key`, `halt-key!`) dispatched on keywords. Component uses protocols on records. Protocols are easier to navigate in an IDE ("go to definition" works), and the lifecycle implementation lives alongside the component's state rather than in a separate multimethod somewhere.
+- **Configuration**: Integrant has its own `#ig/ref`, `#ig/refset`, and `#ig/profile` tags. Oreo uses Aero, which already provides `#ref`, `#env`, `#or`, `#profile`, `#include`, `#merge`, and more. Many Integrant users end up adding Aero on top for these features anyway.
+- **Migration path**: If you already use Component, Oreo is additive — your existing records and Lifecycle implementations work unchanged. Integrant requires rewriting every component as multimethod implementations.
+- **Concept count**: Integrant introduces keyword hierarchies (`derive`), composite keys, `expand-key` modules, `suspend!/resume` — each useful, but together they add up. Oreo's API is 3 functions and 2 reader tags.
+
+### vs [Mount](https://github.com/tolitius/mount)
+
+Mount takes a fundamentally different approach: global singleton state via `defstate`. It's convenient for small applications, but:
+
+- There is no explicit dependency graph — ordering is implicit from namespace loading order.
+- The system is not a value you can inspect, pass around, or run multiple instances of.
+- Testing with alternative configurations requires `mount/start-with` overrides rather than simply passing a different config map.
+
+Component (and by extension Oreo) gives you the system as a first-class value with explicit dependency wiring.
+
+### vs [donut.system](https://github.com/donut-party/system)
+
+donut.system is also data-driven and builds on ideas from both Component and Integrant. It's more ambitious in scope, introducing signals, channels, groups, and its own configuration layer. If you want a batteries-included framework with more built-in abstractions, it may be a good fit. Oreo aims for the opposite end of the spectrum: minimal glue code between two libraries you might already be using.
 
 
-### So it's like [Integrant](https://github.com/weavejester/integrant)?
+# Tips & tricks
 
-Maybe. I have never used it in anger, but it looks vaguely similar. The reason why Oreo exists is because:
+### Code reloading
 
-- Component already solved this problem, and because of its reliance on protocols and records, it can be integrated (heh) with the Java ecosystem in a more flexible way than Integrant.
-- Oreo doesn't reinvent what Aero does already - Integrant has its own notion of `ref`, etc.
-- Most importantly, Oreo is meant to help existing Component users rather than require rewriting code.
+Using Oreo means your system definition lives in EDN, not code. This can clash with `tools.namespace` reloading since the config is read once at load time.
 
-### Code reloading, renaming, etc.
-
-Obviously, using Oreo clashes with reloading your code, renaming things, etc., since everything is declarative.
-The "typical" usage of Component is not susceptible to this because your system is defined as part of regular code. Just be careful about reloading things.
-
-
-There are two options:
-
-#### Instruct `tools.namespace` to reload your system namespace
-
-Let's say your `app.system` looks like this:
+**Option 1: Instruct `tools.namespace` to reload your system namespace**
 
 ```clojure
 (ns app.system
@@ -190,12 +210,9 @@ Let's say your `app.system` looks like this:
 
 (defn development []
   (oreo/create-system (config/load-config :development)))
-
 ```
 
-
-Then in your `app.repl` (or `app.user` or whatever), you'd do something like this:
-
+Then in your REPL namespace:
 
 ```clojure
 (require '[clojure.tools.namespace.repl :as tn.repl]
@@ -206,13 +223,11 @@ Then in your `app.repl` (or `app.user` or whatever), you'd do something like thi
    (let [system (app.system/development)]
      (component/start (component/map->SystemMap system))))
 
-
 (def sys nil)
-
 
 (defn go []
   ;; instruct t.n.repl tracker to always reload system namespace
-  (alter-meta! (find-ns 'app.system) merge { ::tn.repl/load true ::tn.repl/unload true})
+  (alter-meta! (find-ns 'app.system) merge {::tn.repl/load true ::tn.repl/unload true})
   (tn.repl/refresh)
   (alter-var-root #'sys (fn [sys] (when-not sys (start))))
   :ready)
@@ -225,58 +240,51 @@ Then in your `app.repl` (or `app.user` or whatever), you'd do something like thi
   :stopped)
 ```
 
+**Option 2: Define the system in code instead of EDN**
 
-#### Alternatively....
-
-Another way around it would be to bypass Aero layer, and use Oreo directly by passing a system map to `oreo.core/create-system`:
+You can bypass Aero and pass a system map directly to `oreo.core/make-system-map`:
 
 ```clojure
 (ns app.system
-  (:require [oreo.core]
+  (:require [oreo.core :as oreo]
+            [com.stuartsierra.component :as component]
             [app.component.http :as http]
             [app.component.postgres :as postgres]))
 
-
 (defn system []
-  (oreo.core/create-system {:db #:oc {:create postgres/create
-                                      :init {:uri "localhost"
-                                             :port 5432}}
-                            :api #:oc {:create http/create-server
-                                       :init {:port 1000}
-                                       :using [:db]}}))
+  (-> {:db #:oc {:create postgres/create
+                 :init {:uri "localhost"
+                        :port 5432}}
+       :api #:oc {:create http/create-server
+                  :init {:port 1000}
+                  :using [:db]}}
+      oreo/make-system-map))
 ```
 
-This is less desirable approach as it invalidates most of the benefits of using Oreo (and Aero).
+This is less desirable as it gives up most benefits of Aero, but it works.
 
+### I don't want to use records and protocols
 
-### I don't want to use records and protocols, they smell like Java ☕️
-
-That's not really my or Oreo's problem, but here's what you can do:
-
-- Use records.
-- Your `:create` function can return something that implements the `Lifecycle` protocol using the `extend-via-metadata` approach. My `utility-belt` library [provides a small function to create components out of maps](https://github.com/lukaszkorecki/utility-belt/blob/a3275f183a142a0a30bfe42ffccc15bf15e8c863/src/utility_belt/component.clj#L56)
-
+Your `:oc/create` function can return anything that implements Component's `Lifecycle` protocol. Besides records, you can use the `extend-via-metadata` approach on plain maps. My [utility-belt](https://github.com/lukaszkorecki/utility-belt/blob/a3275f183a142a0a30bfe42ffccc15bf15e8c863/src/utility_belt/component.clj#L56) library provides a helper for this.
 
 ### I don't want to define my config and system map in the same file
 
-Use `#include` - see Aero's docs for more info, or see the tip above.
-
+Use Aero's `#include` reader tag to split your config across files.
 
 ### How do I create different variants of my system?
 
-Remember, you have all features of Aero at your disposal, including `#profile` reader tag - see tests in `core_test.clj` to see how it can be used.
-This should give you an idea how to put it together:
+You have all of Aero's features at your disposal. Use `#profile` and `#merge` to compose system variants:
 
 ```clojure
 {:db-conn {:uri "localhost"
            :port #long #or [#env "DB_PORT" 543]}
 
- :components {:db #:oc {:create #oc/ref oreo.core-test/create-dummy
+ :components {:db #:oc {:create #oc/ref :app.component.db/create
                         :init #ref [:db-conn]}
-              :api #:oc {:create #oc/ref oreo.core-test/create-dummy
+              :api #:oc {:create #oc/ref :app.component.api/create
                          :init {:port 1000}
                          :using [:db]}
-              :worker #:oc {:create #oc/ref oreo.core-test/create-dummy
+              :worker #:oc {:create #oc/ref :app.component.worker/create
                             :init {:count 3}
                             :using [:db]}}
 
@@ -286,23 +294,17 @@ This should give you an idea how to put it together:
 
                       :worker #merge [{:worker #ref [:components :worker]}
                                       {:db #ref [:components :db]}]}}
-
 ```
 
-Now when reading config via `aero/read-config` with different profile value, your system will be composed
-according to the profile name. Again: you have all of Aero's tools available at your disposal.
+Load with `(aero/read-config "config.edn" {:profile :api})` and only the API and DB components will be included.
 
-# Status/Roadmap/TODO
+# Status
 
-> [!WARNING]
-> Alpha quality warning has to be repeated here
-> I'm using Oreo in a couple of applications doing work every day, but it has not been validated in bigger systems
+Oreo is used in production across several backend services. The API is small and stable.
 
-
-- [x] Make it work in a synthetic example.
-- [x] Use in something real.
-- [ ] Finalize naming & API.
-- [ ] See if any of `utility-belt.component` utils can be merged in and/or used.
-- [ ] Somehow solve the reloading issue - hook into `tools.namespace`?
-- [ ] Use in something real and complicated.
-- [ ] Clojars release.
+- [x] Make it work in a synthetic example
+- [x] Use in something real
+- [x] Clojars release
+- [ ] See if any of `utility-belt.component` utils can be merged in and/or used
+- [ ] Solve the reloading issue — hook into `tools.namespace`?
+- [ ] Validate in larger multi-system applications

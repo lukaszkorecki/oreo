@@ -28,9 +28,9 @@
                       e)))))
 
 (defn resolve-system-from-config
-  "Traverse system config, and for each map that has :oreo/create key do the following:
+  "Traverse system config, and for each map that has :oc/create key do the following:
   - resolve the Component constructor, referenced as fully namespaced keyword (e.g. :app.component.foo/create)
-  - optionally pass component configuration stored under :oreo/config key
+  - optionally pass component configuration stored under :oc/init key
   - optionally configure the component to wire dependencies into it, just like Component does"
   [system-config]
   (->> system-config
@@ -48,9 +48,9 @@
 (defn make-system-map
   "Process system config, resolve all components and return component/SystemMap instance"
   [system-config]
-  (-> system-config
-      resolve-system-from-config
-      component/map->SystemMap))
+  (->> system-config
+       resolve-system-from-config
+       (component/map->SystemMap)))
 
 (defn create-system
   "Given a config map processed by aero.core/read-config
