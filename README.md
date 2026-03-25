@@ -195,11 +195,66 @@ donut.system is also data-driven and builds on ideas from both Component and Int
 
 # Tips & tricks
 
-### Code reloading
+### System definition in `.clj` files
 
-Using Oreo means your system definition lives in EDN, not code. This can clash with `tools.namespace` reloading since the config is read once at load time.
+When your system definition lives in `.edn`, you get Aero's full feature set but lose editor navigation and natural code reloading. You can define your system in `.clj` instead, and there are two ways to do it:
 
-**Option 1: Instruct `tools.namespace` to reload your system namespace**
+**Option 1: Plain vars (recommended)**
+
+In `.clj` files you don't need reader tags at all. Just require the namespaces and reference vars directly — your editor's jump-to-definition works, and `tools.namespace` reloading picks up changes naturally:
+
+```clojure
+(ns app.system
+  (:require
+   [aero.core :as aero]
+   [oreo.core :as oreo]
+   [com.stuartsierra.component :as component]
+   [clojure.java.io :as io]
+   [app.component.db :as db]
+   [app.component.http :as http]
+   [app.api :as api]))
+
+;; environment-specific values still come from Aero
+(def env-config
+  (aero/read-config (io/resource "env.edn")))
+
+(def system-config
+  {:db #:oc {:create db/create
+             :init (:db env-config)}
+   :api #:oc {:create http/create-server
+              :init {:port 8080
+                     :handler api/handler}
+              :using [:db]}})
+
+(defn start []
+  (-> system-config
+      oreo/make-system-map
+      component/start))
+```
+
+This is the simplest approach. The `:oc/create` value just needs to be something callable — a var reference like `db/create` works directly. Same for values in `:oc/init` like `api/handler`.
+
+**Option 2: `data_readers.clj` tags**
+
+Oreo also ships a `data_readers.clj` that registers `#oc/ref` and `#oc/deref` as standard Clojure tagged literals. This is useful when you want lazy namespace loading via `requiring-resolve` — the namespace is loaded on first use rather than at compile time:
+
+```clojure
+(def system-config
+  {:db #:oc {:create #oc/ref :app.component.db/create
+             :init (:db env-config)}
+   :api #:oc {:create #oc/ref :app.component.http/create
+              :init {:port 8080
+                     :handler #oc/deref :app.api/handler}
+              :using [:db]}})
+```
+
+This behaves identically to the `.edn` version — `#oc/ref` returns the var, `#oc/deref` returns its dereferenced value. The difference from plain vars is that `requiring-resolve` loads the namespace on demand, so you don't need explicit `:require` entries. The trade-off is that you lose jump-to-definition in your editor.
+
+**In both cases**, Aero-specific tags (`#ref`, `#env`, `#profile`, `#include`) are not available in `.clj` files — those only work inside `.edn` files processed by `aero/read-config`. Use plain Clojure for config cross-references and load environment values via Aero separately, as shown above.
+
+### Code reloading with `.edn` configs
+
+If you prefer keeping the full system definition in `.edn` (to use `#ref`, `#profile`, etc.), reloading requires extra wiring. Instruct `tools.namespace` to always reload your system namespace:
 
 ```clojure
 (ns app.system
@@ -239,29 +294,6 @@ Then in your REPL namespace:
                             nil)))
   :stopped)
 ```
-
-**Option 2: Define the system in code instead of EDN**
-
-You can bypass Aero and pass a system map directly to `oreo.core/make-system-map`:
-
-```clojure
-(ns app.system
-  (:require [oreo.core :as oreo]
-            [com.stuartsierra.component :as component]
-            [app.component.http :as http]
-            [app.component.postgres :as postgres]))
-
-(defn system []
-  (-> {:db #:oc {:create postgres/create
-                 :init {:uri "localhost"
-                        :port 5432}}
-       :api #:oc {:create http/create-server
-                  :init {:port 1000}
-                  :using [:db]}}
-      oreo/make-system-map))
-```
-
-This is less desirable as it gives up most benefits of Aero, but it works.
 
 ### I don't want to use records and protocols
 
@@ -305,6 +337,6 @@ Oreo is used in production across several backend services. The API is small and
 - [x] Make it work in a synthetic example
 - [x] Use in something real
 - [x] Clojars release
+- [x] `data_readers.clj` for `.clj`-based system definitions
 - [ ] See if any of `utility-belt.component` utils can be merged in and/or used
-- [ ] Solve the reloading issue — hook into `tools.namespace`?
 - [ ] Validate in larger multi-system applications

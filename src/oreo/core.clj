@@ -4,28 +4,34 @@
    [com.stuartsierra.component :as component]
    [oreo.model]))
 
-;; Simplfies loading functions in configs, before we event get to the system/component
-;; assembly point
+;; Reader functions for resolving vars from namespaced keywords/symbols.
+;; Used by both Aero reader methods (for .edn configs) and
+;; Clojure data readers (for .clj system definitions via data_readers.clj).
 
-;; Aero reader for functions, which forces resolving the var itself
-(defmethod aero/reader 'oc/deref
-  [_opts _tag value]
+(defn resolve-deref
+  "Resolve a namespaced symbol or keyword to a var and dereference it.
+  Returns the value the var points to (e.g. a function, atom, map)."
+  [value]
   (try
     (deref (requiring-resolve (symbol value)))
     (catch Exception e
-      (throw (ex-info (str "Failed to resolve var: " value) {:tag _tag
-                                                             :value value}
+      (throw (ex-info (str "Failed to resolve var: " value)
+                      {:tag 'oc/deref :value value}
                       e)))))
 
-;; Similar to above, but returns a var
-(defmethod aero/reader 'oc/ref
-  [_opts _tag value]
+(defn resolve-ref
+  "Resolve a namespaced symbol or keyword to a var without dereferencing.
+  Returns the var itself."
+  [value]
   (try
     (requiring-resolve (symbol value))
     (catch Exception e
-      (throw (ex-info (str "Failed to resolve var: " value) {:tag _tag
-                                                             :value value}
+      (throw (ex-info (str "Failed to resolve var: " value)
+                      {:tag 'oc/ref :value value}
                       e)))))
+
+(defmethod aero/reader 'oc/deref [_ _ value] (resolve-deref value))
+(defmethod aero/reader 'oc/ref [_ _ value] (resolve-ref value))
 
 (defn resolve-system-from-config
   "Traverse system config, and for each map that has :oc/create key do the following:

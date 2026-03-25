@@ -80,6 +80,32 @@
                                      :settings {:greeting "hello world"}}}
                       system-after)))))))
 
+(deftest clj-plain-vars-test
+  (testing "system defined in .clj using plain var references"
+    (let [system-config {:publisher #:oc {:create create-publisher}
+                         :settings {:greeting "hello from plain vars"}}
+          {:keys [publisher] :as system} (-> system-config
+                                             oreo/make-system-map
+                                             component/start)]
+      (testing "component is created and functional"
+        (publish publisher "plain vars work")
+        (is (= ["plain vars work"] (get-messages publisher))))
+
+      (component/stop system))))
+
+(deftest clj-data-readers-test
+  (testing "system defined in .clj using data reader tags works the same as .edn"
+    (let [system-config {:publisher #:oc {:create #oc/ref :oreo.core-test/create-publisher}
+                         :settings {:greeting "hello from clj"}}
+          {:keys [publisher] :as system} (-> system-config
+                                             oreo/make-system-map
+                                             component/start)]
+      (testing "component is created and functional"
+        (publish publisher "test message")
+        (is (= ["test message"] (get-messages publisher))))
+
+      (component/stop system))))
+
 (deftest profiles-test
   (let [create-system (fn [profile]
                         (-> (aero/read-config "test/oreo/profile-test.edn" {:profile profile})
