@@ -4,8 +4,6 @@ fmt:
 test:
 	clj -M:dev:test
 
-	clj -M:benchmark
-
 update-deps:
 	clj -M:dev/outdated
 
