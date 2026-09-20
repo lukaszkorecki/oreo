@@ -1,6 +1,6 @@
-(ns oreo.model
-  (:require [clojure.spec.alpha :as s]
-            [clojure.set :as set]))
+(ns oreo.config-spec
+  (:require [clojure.set :as set]
+            [clojure.spec.alpha :as s]))
 
 ;; NOTE: we are validating AFTER Aero resolves all refs, so this always has to be a function
 (s/def :oc/create #(or (fn? %) (var? %)))
@@ -27,12 +27,12 @@
                          (and (map? component) (contains? component :oc/create)))
                  (let [{:oc/keys [create using]} component
                        errors (cond-> {}
-                                      (not (s/valid? :oc/create create))
-                                      (assoc :invalid-create create)
+                                (not (s/valid? :oc/create create))
+                                (assoc :invalid-create create)
 
-                                      (and using
-                                           (not (s/valid? :oc/using using)))
-                                      (assoc :invalid-using using))]
+                                (and using
+                                     (not (s/valid? :oc/using using)))
+                                (assoc :invalid-using using))]
                    (when (not-empty errors)
                      {:component component
                       :errors errors})))))

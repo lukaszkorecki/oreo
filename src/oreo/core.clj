@@ -2,10 +2,7 @@
   (:require
    [aero.core :as aero]
    [com.stuartsierra.component :as component]
-   [oreo.model]))
-
-;; Simplfies loading functions in configs, before we event get to the system/component
-;; assembly point
+   [oreo.config-spec :as config]))
 
 ;; Aero reader for functions, which forces resolving the var itself
 (defmethod aero/reader 'oc/deref
@@ -19,11 +16,11 @@
 
 ;; Similar to above, but returns a var
 (defmethod aero/reader 'oc/ref
-  [_opts _tag value]
+  [_opts tag value]
   (try
     (requiring-resolve (symbol value))
     (catch Exception e
-      (throw (ex-info (str "Failed to resolve var: " value) {:tag _tag
+      (throw (ex-info (str "Failed to resolve var: " value) {:tag tag
                                                              :value value}
                       e)))))
 
@@ -41,9 +38,10 @@
                          component (cond-> (if (contains? thing :oc/init)
                                              (create init)
                                              (create))
-                                           (seq using) (component/using using))]
+                                     (seq using) (component/using using))]
                      {name component})
-                   {name thing})))))
+                   {name thing})))
+       (into {})))
 
 (defn make-system-map
   "Process system config, resolve all components and return component/SystemMap instance"
@@ -60,5 +58,5 @@
    (create-system config :oc/system))
   ([config system-def-key]
    (-> (get config system-def-key)
-       oreo.model/validate!
+       config/validate!
        make-system-map)))
