@@ -45,8 +45,11 @@
          (vals)
          (mapv (fn [component]
                  (when (and (map? component)
-                            (:oc/using component))
-                   (let [deps (set (get component :oc/using #{}))]
+                            (not-empty (:oc/using component)))
+                   (let [deps (get component :oc/using)
+                         deps (set (if (map? deps)
+                                     (vals deps)
+                                     deps))]
                      (when-not (set/subset? deps all-keys)
                        {:component component
                         :missing-deps (set/difference deps all-keys)})))))

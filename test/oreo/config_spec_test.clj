@@ -22,12 +22,12 @@
 
 (deftest using-specs-test
   (testing "vector"
-    (is (= {:foobar #:oc {:create create :deps [:foobar]}}
-           (config/validate! {:foobar #:oc {:create create :deps [:foobar]}}))))
+    (is (= {:foobar #:oc {:create create :using [:foobar]}}
+           (config/validate! {:foobar #:oc {:create create :using [:foobar]}}))))
 
   (testing "map"
-    (is (= {:foobar #:oc {:create create :deps {:foobar :foobar}}}
-           (config/validate! {:foobar #:oc {:create create :deps {:foobar :foobar}}})))))
+    (is (= {:foobar #:oc {:create create :using {:foobar :foobar}}}
+           (config/validate! {:foobar #:oc {:create create :using {:foobar :foobar}}})))))
 
 (deftest missing-create-test
   (testing "invalid component def map"
