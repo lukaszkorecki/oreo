@@ -106,6 +106,15 @@
 
       (component/stop system))))
 
+(def store (atom []))
+
+(deftest clj-data-readers-deref-test
+  (testing "#oc/deref of a non-embeddable value works inside a fn body"
+    (let [system-config {:store #oc/deref :oreo.core-test/store
+                         :settings {:handler #oc/deref oreo.core-test/handler}}]
+      (is (identical? store (:store system-config)))
+      (is (= handler (-> system-config :settings :handler))))))
+
 (deftest profiles-test
   (let [create-system (fn [profile]
                         (-> (aero/read-config "test/oreo/profile-test.edn" {:profile profile})

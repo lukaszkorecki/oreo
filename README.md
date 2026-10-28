@@ -250,6 +250,8 @@ Oreo also ships a `data_readers.clj` that registers `#oc/ref` and `#oc/deref` as
 
 This behaves identically to the `.edn` version — `#oc/ref` returns the var, `#oc/deref` returns its dereferenced value. The difference from plain vars is that `requiring-resolve` loads the namespace on demand, so you don't need explicit `:require` entries. The trade-off is that you lose jump-to-definition in your editor.
 
+The tags expand to `(oreo.core/resolve-ref ...)` / `(oreo.core/resolve-deref ...)` calls, so vars are resolved when the expression is evaluated, not when it's read — this keeps AOT compilation working and lets `#oc/deref` point at atoms or other values that can't be embedded in code. `oreo.core` has to be loaded before the tags are read, so keep it in your `ns` form's `:require`.
+
 **In both cases**, Aero-specific tags (`#ref`, `#env`, `#profile`, `#include`) are not available in `.clj` files — those only work inside `.edn` files processed by `aero/read-config`. Use plain Clojure for config cross-references and load environment values via Aero separately, as shown above.
 
 ### Code reloading with `.edn` configs

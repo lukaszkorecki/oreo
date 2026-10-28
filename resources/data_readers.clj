@@ -1,2 +1,2 @@
-{oc/ref oreo.core/resolve-ref
- oc/deref oreo.core/resolve-deref}
+{oc/ref oreo.core/ref-form
+ oc/deref oreo.core/deref-form}

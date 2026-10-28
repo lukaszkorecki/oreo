@@ -33,6 +33,12 @@
 (defmethod aero/reader 'oc/deref [_ _ value] (resolve-deref value))
 (defmethod aero/reader 'oc/ref [_ _ value] (resolve-ref value))
 
+(defn deref-form [value]
+  (list `resolve-deref (list 'quote value)))
+
+(defn ref-form [value]
+  (list `resolve-ref (list 'quote value)))
+
 (defn resolve-system-from-config
   "Traverse system config, and for each map that has :oc/create key do the following:
   - resolve the Component constructor, referenced as fully namespaced keyword (e.g. :app.component.foo/create)
