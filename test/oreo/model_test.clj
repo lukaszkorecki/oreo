@@ -1,8 +1,8 @@
 (ns oreo.model-test
-  (:require [oreo.model]
+  (:require [aero.core :as aero]
+            [clojure.test :refer [deftest is testing]]
             [oreo.core]
-            [aero.core :as aero]
-            [clojure.test :refer [deftest is testing]]))
+            [oreo.model]))
 
 (defn create [& _] :test)
 

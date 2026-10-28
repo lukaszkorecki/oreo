@@ -1,11 +1,11 @@
 (ns oreo.core-test
   (:require
-   [oreo.core :as oreo]
    [aero.core :as aero]
-   [matcher-combinators.test :refer [match?]]
    [clojure.test :refer [deftest is testing]]
-   [utility-belt.component :as component.util]
-   [com.stuartsierra.component :as component]))
+   [com.stuartsierra.component :as component]
+   [matcher-combinators.test :refer [match?]]
+   [oreo.core :as oreo]
+   [utility-belt.component :as component.util]))
 
 (def system-config
   "test/oreo/test.edn")

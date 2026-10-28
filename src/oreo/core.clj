@@ -53,7 +53,7 @@
                          component (cond-> (if (contains? thing :oc/init)
                                              (create init)
                                              (create))
-                                           (seq using) (component/using using))]
+                                     (seq using) (component/using using))]
                      {name component})
                    {name thing})))))
 
