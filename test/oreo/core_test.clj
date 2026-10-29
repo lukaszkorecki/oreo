@@ -115,6 +115,14 @@
       (is (identical? store (:store system-config)))
       (is (= handler (-> system-config :settings :handler))))))
 
+(deftest make-system-map-validation-test
+  (testing "system defined in .clj is validated"
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"Invalid system definition"
+                          (oreo/make-system-map {:publisher #:oc {:create create-publisher
+                                                                  :using [:missing]}})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"Invalid system definition"
+                          (oreo/make-system-map {:publisher #:oc {:create "not-a-fn"}})))))
+
 (deftest profiles-test
   (let [create-system (fn [profile]
                         (-> (aero/read-config "test/oreo/profile-test.edn" {:profile profile})

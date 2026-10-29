@@ -61,6 +61,7 @@
   "Process system config, resolve all components and return component/SystemMap instance"
   [system-config]
   (->> system-config
+       oreo.model/validate!
        resolve-system-from-config
        (component/map->SystemMap)))
 
@@ -71,6 +72,4 @@
   ([config]
    (create-system config :oc/system))
   ([config system-def-key]
-   (-> (get config system-def-key)
-       oreo.model/validate!
-       make-system-map)))
+   (make-system-map (get config system-def-key))))
